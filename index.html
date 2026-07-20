@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Yard MP · Quality Picking Simulation</title>
+<style>
+  :root{ color-scheme:light; --navy:#1A1A2E; --purple:#6347FF; --teal:#38BAB9; --ink:#1A1A2E; --bg:#F4F5FA; --panel:#fff; --line:#e3e5ef;
+         --qlow:#e5484d; --qmid:#8b93a7; --qhigh:#30a46c; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:'Figtree',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  #app{display:flex;flex-direction:column;height:100vh}
+  header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 18px;background:var(--navy);color:#fff}
+  header h1{font-size:16px;margin:0;font-weight:600}
+  header .sub{font-size:12px;opacity:.75;max-width:640px}
+  .controls{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+  button{font:inherit;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;background:var(--purple);color:#fff}
+  button.ghost{background:rgba(255,255,255,.12);color:#fff}
+  button:active{transform:translateY(1px)}
+  .modes{display:flex;background:rgba(255,255,255,.1);border-radius:10px;padding:3px;gap:2px}
+  .modes button{background:transparent;color:#c9cde6;padding:7px 14px}
+  .modes button.active{background:#fff;color:var(--navy)}
+  .controls label{font-size:12px;opacity:.85;display:flex;align-items:center;gap:6px}
+  input[type=range]{width:130px}
+  .stats{display:flex;gap:14px;padding:8px 18px;background:var(--panel);border-bottom:1px solid var(--line);font-size:13px;flex-wrap:wrap;align-items:center}
+  .stat b{color:var(--purple)}
+  #phase{font-weight:700;padding:3px 12px;border-radius:20px;font-size:12px}
+  .phase-store{background:#e8f7ff;color:#0f6ea8} .phase-buffer{background:#eef0ff;color:#4b3fd6} .phase-consume{background:#eafaf0;color:#1c7a4a}
+  .qlegend{display:flex;align-items:center;gap:8px;font-size:12px;margin-left:auto}
+  .qbar{width:150px;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--qlow),var(--qmid),var(--qhigh))}
+  #stageWrap{flex:1;overflow:auto;position:relative}
+  #stage{position:relative;transform-origin:top left}
+  #factory{position:absolute;text-align:center}
+  #factory .ico{font-size:80px;line-height:1}
+  #factory .rec{font-size:36px;margin-top:-12px}
+  #factory .lbl{font-weight:700;color:var(--navy);font-size:14px;margin-top:2px}
+  .feedwrap{position:absolute;font-size:11px;color:#6b7186;font-weight:700}
+  .feed{display:flex;flex-wrap:wrap;gap:3px;width:210px;margin-top:6px}
+  .fmini{width:13px;height:13px;border-radius:3px;border:1px solid rgba(0,0,0,.12)}
+  .bufzone{position:absolute;border:2px dashed var(--teal);border-radius:14px;background:rgba(56,186,185,.06)}
+  .bufzone .bt{position:absolute;top:-11px;left:14px;background:var(--bg);padding:0 8px;font-size:12px;font-weight:700;color:#1f8a89}
+  .truckzone{position:absolute;border:2px dashed #cfd4e6;border-radius:14px;color:#8890b5;font-size:12px;padding:8px 10px;font-weight:600}
+  .arrow{position:absolute;color:#8890b5;font-size:12px}
+  .arrow .line{height:2px;background:#c3c8de;position:relative;margin-top:6px;width:150px}
+  .arrow .line.l:after{content:'';position:absolute;left:-1px;top:-4px;border:5px solid transparent;border-right-color:#c3c8de}
+  .island-label{position:absolute;font-weight:700;color:var(--purple);font-size:15px}
+  .fila-label{position:absolute;font-size:11px;color:#8890b5}
+  .slot{position:absolute;border:1px dashed #d3d7e6;border-radius:8px}
+  .bslot{position:absolute;border:1px dashed #9bd8d7;border-radius:8px}
+  .qtitle{position:absolute;font-size:12px;color:#6b7186}
+  .carga{position:absolute;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:#fff;font-size:10px;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.25);box-shadow:0 1px 3px rgba(20,25,60,.18);
+    transition:left var(--mv) cubic-bezier(.45,.05,.25,1), top var(--mv) cubic-bezier(.45,.05,.25,1), opacity .3s;}
+  .carga .pacas{display:flex;gap:3px;margin-top:3px}
+  .carga .pacas i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.35);transition:background .2s, transform .2s}
+  .carga .pacas i.on{background:rgba(255,255,255,.95);transform:scale(1.05)}
+  .fly{position:absolute;border-radius:3px;box-shadow:0 1px 2px rgba(20,25,60,.3);border:1px solid rgba(0,0,0,.15);z-index:35;
+    transition:left var(--mv) cubic-bezier(.45,.05,.25,1), top var(--mv) cubic-bezier(.45,.05,.25,1), opacity .25s;}
+  #fork{position:absolute;z-index:40;pointer-events:none;transition:left var(--mv) linear, top var(--mv) linear;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+  #truck{position:absolute;z-index:20;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2))}
+  .legend{position:absolute;font-size:11px;color:#8890b5}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <h1>Yard MP — Quality Picking Simulation</h1>
+      <div class="sub" id="sub">Each load has a quality. Stage a mix in the buffer, then alternate → production gets a balanced blend.</div>
+    </div>
+    <div class="controls">
+      <div class="modes">
+        <button id="mStore" class="active">📦 Storing</button>
+        <button id="mBuffer">📥 Send to Buffer</button>
+        <button id="mConsume">♻️ Consume</button>
+      </div>
+      <button id="play">⏸ Pause</button>
+      <button class="ghost" id="reset">↺ Reset</button>
+      <label>Speed <input type="range" id="speed" min="0.5" max="16" step="0.5" value="1"></label>
+      <span id="spd" style="font-size:12px;opacity:.8;width:38px">1.0×</span>
+    </div>
+  </header>
+  <div class="stats">
+    <span id="phase" class="phase-store">Phase: Storing</span>
+    <div class="stat">In play: <b id="sInYard">0</b>/<span id="sCap">0</span> bales</div>
+    <div class="stat">Buffer: <b id="sBufLoads">0</b>/<span id="sBufMax">5</span> loads</div>
+    <div class="stat">Fed to production: <b id="sToProd">0</b></div>
+    <div class="stat">Feed mix: <b id="sMix">–</b></div>
+    <div class="qlegend">Quality: Low <span class="qbar"></span> High <span style="color:#8b93a7">· grey = intermediate</span></div>
+  </div>
+  <div id="stageWrap"><div id="stage"></div></div>
+</div>
+<script>
+// ---------- config ----------
+const ISLANDS=[{id:'A',name:'ISLAND A'},{id:'B',name:'ISLAND B'},{id:'C',name:'ISLAND C'}];
+const FILAS=3, SLOTS_PER_FILA=10, CAP=FILAS*SLOTS_PER_FILA, TOTAL=ISLANDS.length*CAP;
+const QUAL=[{k:'Low',c:'#e5484d'},{k:'Intermediate',c:'#8b93a7'},{k:'High',c:'#30a46c'}]; // 0 low,1 mid,2 high
+const SLOT_W=70, SLOT_H=52, CARGA_W=58, CARGA_H=42, FLY=16;
+const YARD_X0=470, FILA_PITCH=62, TOP=160, ISLA_PITCH=FILAS*FILA_PITCH+78;
+const BUF_MAX=5;
+let TRUCK_BED={}, FACT_INTAKE={}, BUF_X=250, BUF_Y0=0, BUF_PITCH=CARGA_H+14;
+
+const stage=document.getElementById('stage');
+let speedMult=1, running=true, seq=0, totalBales=0, initInPlay=0, paused_resolve=null;
+let toProdB=0, feedCount=[0,0,0];
+let mode='store', runId=0;
+const BASE_MOVE=560;
+let islaTop={}; ISLANDS.forEach((is,i)=>islaTop[is.id]=TOP+i*ISLA_PITCH);
+let cargas=[]; let buffer=[];
+
+const FORK_SVG='<svg id="fork" width="54" height="40" viewBox="0 0 54 40" xmlns="http://www.w3.org/2000/svg">'+
+  '<rect x="2" y="21" width="20" height="3.4" rx="1" fill="#555"/><rect x="2" y="28" width="20" height="3.4" rx="1" fill="#555"/>'+
+  '<rect x="19" y="3" width="4.5" height="29" rx="1" fill="#3a3a3a"/>'+
+  '<path d="M24 15 h13 a3 3 0 0 1 3 3 v12 h-16 z" fill="#F5A623"/>'+
+  '<rect x="32" y="3" width="14" height="13" rx="2" fill="#F5A623"/><rect x="34.5" y="5.5" width="9" height="8" rx="1" fill="#bfe3ff"/>'+
+  '<circle cx="29" cy="32" r="5.4" fill="#222"/><circle cx="43" cy="32" r="5.4" fill="#222"/>'+
+  '<circle cx="29" cy="32" r="2" fill="#888"/><circle cx="43" cy="32" r="2" fill="#888"/></svg>';
+const TRUCK_SVG='<svg id="truck" width="120" height="66" viewBox="0 0 120 66" xmlns="http://www.w3.org/2000/svg">'+
+  '<rect x="34" y="8" width="74" height="38" rx="3" fill="#c7ccdb"/><rect x="34" y="8" width="74" height="38" rx="3" fill="none" stroke="#9aa1bb"/>'+
+  '<rect x="41" y="14" width="26" height="12" rx="2" fill="#e5484d"/><rect x="70" y="14" width="26" height="12" rx="2" fill="#30a46c"/>'+
+  '<rect x="41" y="30" width="26" height="12" rx="2" fill="#8b93a7"/><rect x="70" y="30" width="26" height="12" rx="2" fill="#30a46c"/>'+
+  '<path d="M6 22 h28 v24 h-28 a3 3 0 0 1 -3 -3 v-14 a7 7 0 0 1 3 -7 z" fill="#2d9bf0"/>'+
+  '<rect x="8" y="26" width="16" height="11" rx="2" fill="#bfe3ff"/>'+
+  '<circle cx="20" cy="52" r="8" fill="#222"/><circle cx="52" cy="52" r="8" fill="#222"/><circle cx="90" cy="52" r="8" fill="#222"/>'+
+  '<circle cx="20" cy="52" r="3" fill="#888"/><circle cx="52" cy="52" r="3" fill="#888"/><circle cx="90" cy="52" r="3" fill="#888"/></svg>';
+
+// ---------- mapping ----------
+function posFor(gidx){
+  const ii=Math.floor(gidx/CAP), within=gidx%CAP, f=Math.floor(within/SLOTS_PER_FILA), col=within%SLOTS_PER_FILA;
+  return { x: slotX(col)+(SLOT_W-8-CARGA_W)/2, y: islaTop[ISLANDS[ii].id]+f*FILA_PITCH+(SLOT_H-CARGA_H)/2 };
+}
+function centerOf(gidx){ const p=posFor(gidx); return {x:p.x+CARGA_W/2-FLY/2, y:p.y+CARGA_H/2-FLY/2}; }
+function slotX(col){ return YARD_X0+col*SLOT_W; }
+function bufPos(i){ return {x:BUF_X+(150-CARGA_W)/2-14, y:BUF_Y0+i*BUF_PITCH}; }
+function bufCenter(i){ const p=bufPos(i); return {x:p.x+CARGA_W/2-FLY/2, y:p.y+CARGA_H/2-FLY/2}; }
+function factCenter(){ return {x:FACT_INTAKE.x+CARGA_W/2-FLY/2, y:FACT_INTAKE.y+CARGA_H/2-FLY/2}; }
+function boxCenterYard(g){ const p=posFor(g); return {x:p.x+CARGA_W/2, y:p.y+CARGA_H/2}; }
+function boxCenterBuf(i){ const p=bufPos(i); return {x:p.x+CARGA_W/2, y:p.y+CARGA_H/2}; }
+function fork(){ return document.getElementById('fork'); }
+
+// ---------- scene ----------
+function buildScene(){
+  stage.innerHTML='';
+  const W=YARD_X0+SLOTS_PER_FILA*SLOT_W+230, H=TOP+ISLANDS.length*ISLA_PITCH+20;
+  stage.style.width=W+'px'; stage.style.height=H+'px';
+  const midY=TOP+(ISLANDS.length*ISLA_PITCH)/2-30;
+
+  const fx=document.createElement('div'); fx.id='factory';
+  fx.style.cssText=`left:20px;top:${midY-120}px;width:180px`;
+  fx.innerHTML='<div class="ico">🏭</div><div class="rec">♻️</div><div class="lbl">Production · Recycling</div>';
+  stage.appendChild(fx); FACT_INTAKE={x:110-CARGA_W/2, y:midY-30};
+
+  const fwd=document.createElement('div'); fwd.className='feedwrap';
+  fwd.style.cssText=`left:20px;top:${midY+70}px;width:210px`;
+  fwd.innerHTML='Feed to production (order) →<div class="feed" id="feed"></div>'; stage.appendChild(fwd);
+
+  const bufH=BUF_MAX*BUF_PITCH+24; BUF_Y0=midY-bufH/2+22;
+  const bz=document.createElement('div'); bz.className='bufzone';
+  bz.style.cssText=`left:${BUF_X-14}px;top:${BUF_Y0-24}px;width:150px;height:${bufH}px`;
+  bz.innerHTML='<div class="bt">Buffer (~5 loads)</div>'; stage.appendChild(bz);
+  const qt=document.createElement('div'); qt.className='qtitle';
+  qt.style.cssText=`left:${BUF_X-14}px;top:${BUF_Y0-46}px;width:180px`; qt.textContent='Staged MIX of qualities'; stage.appendChild(qt);
+  for(let i=0;i<BUF_MAX;i++){ const p=bufPos(i); const b=document.createElement('div'); b.className='bslot';
+    b.style.cssText=`left:${p.x}px;top:${p.y}px;width:${CARGA_W}px;height:${CARGA_H}px`; stage.appendChild(b); }
+
+  const ar=document.createElement('div'); ar.className='arrow';
+  ar.style.cssText=`left:${YARD_X0}px;top:${TOP-64}px`;
+  ar.innerHTML='← FIFO<div class="line l"></div>'; stage.appendChild(ar);
+
+  const truckX=YARD_X0+SLOTS_PER_FILA*SLOT_W+40;
+  const tz=document.createElement('div'); tz.className='truckzone';
+  tz.style.cssText=`left:${truckX-14}px;top:${TOP-40}px;width:170px;height:150px`;
+  tz.textContent='Reception · Truck'; stage.appendChild(tz);
+  const tw=document.createElement('div'); tw.innerHTML=TRUCK_SVG; stage.appendChild(tw.firstChild);
+  place(document.getElementById('truck'), truckX, TOP-6); TRUCK_BED={x:truckX+28, y:TOP+10};
+  const dz=document.createElement('div'); dz.className='legend';
+  dz.style.cssText=`left:${truckX-14}px;top:${TOP+118}px`;
+  dz.innerHTML='Unload bale by bale →<br>ISLAND A→B→C, row by row'; stage.appendChild(dz);
+
+  ISLANDS.forEach(is=>{
+    const y0=islaTop[is.id];
+    const lab=document.createElement('div'); lab.className='island-label';
+    lab.style.cssText=`left:${YARD_X0}px;top:${y0-28}px`; lab.textContent=is.name; stage.appendChild(lab);
+    for(let f=0;f<FILAS;f++){
+      const fl=document.createElement('div'); fl.className='fila-label';
+      fl.style.cssText=`left:${YARD_X0-46}px;top:${y0+f*FILA_PITCH+SLOT_H/2-8}px`; fl.textContent='R'+(f+1); stage.appendChild(fl);
+      for(let s=0;s<SLOTS_PER_FILA;s++){ const sl=document.createElement('div'); sl.className='slot';
+        sl.style.cssText=`left:${slotX(s)}px;top:${y0+f*FILA_PITCH}px;width:${SLOT_W-8}px;height:${SLOT_H}px`; stage.appendChild(sl); }
+    }
+  });
+  const fw=document.createElement('div'); fw.innerHTML=FORK_SVG; stage.appendChild(fw.firstChild);
+  place(fork(), TRUCK_BED.x-30, TRUCK_BED.y); fitStage();
+}
+
+// ---------- helpers ----------
+function moveMs(){ return Math.max(42, Math.round(BASE_MOVE/speedMult)); }
+function place(el,x,y){ el.style.left=x+'px'; el.style.top=y+'px'; }
+function placeInstant(el,x,y){ el.style.transition='none'; place(el,x,y); void el.offsetWidth; el.style.transition=''; }
+function setMoveVars(){ document.querySelectorAll('.carga,.fly,#fork').forEach(e=>e.style.setProperty('--mv',moveMs()+'ms')); }
+const wait=ms=>new Promise(r=>setTimeout(r,ms/speedMult));
+async function ensureRunning(){ if(!running){ await new Promise(r=>{paused_resolve=r;}); } }
+const alive=id=>id===runId;
+const FORK_W=54, FORK_H=40;
+function parkFork(cx,cy,side){ const f=fork();
+  if(side==='R'){ f.style.transform='scaleX(1)'; place(f, cx+14, cy-FORK_H/2); }
+  else { f.style.transform='scaleX(-1)'; place(f, cx-14-FORK_W, cy-FORK_H/2); } }
+async function moveForkTo(cx,cy,side){ parkFork(cx,cy,side); await wait(moveMs()); }
+
+function makeLoadEl(c){
+  const el=document.createElement('div'); el.className='carga';
+  el.style.width=CARGA_W+'px'; el.style.height=CARGA_H+'px'; el.style.background=c.color; el.style.setProperty('--mv',moveMs()+'ms');
+  let dots=''; for(let i=0;i<c.n;i++) dots+='<i></i>';
+  const title = c.origin ? `Isla ${c.origin} · C${c.id}` : `Carga ${c.id}`;
+  el.innerHTML=`<div>${title}</div><div class="pacas">${dots}</div>`;
+  stage.appendChild(el); c.el=el; c.dots=[...el.querySelectorAll('.pacas i')]; return el;
+}
+function refreshDots(c){ c.dots.forEach((d,i)=>d.classList.toggle('on', i<c.filled)); }
+function makeFly(color){ const el=document.createElement('div'); el.className='fly';
+  el.style.width=FLY+'px'; el.style.height=FLY+'px'; el.style.background=color; el.style.setProperty('--mv',moveMs()+'ms');
+  stage.appendChild(el); return el; }
+function seededRandom(s){ return function(){ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+
+function genCargas(){ cargas=[]; totalBales=0; seq=0; const rnd=seededRandom(20260720);
+  for(let g=0;g<TOTAL;g++){ const n=1+Math.floor(rnd()*3); const q=Math.floor(rnd()*3); seq++;
+    cargas.push({id:seq,q,color:QUAL[q].c,n,filled:0,el:null,dots:[]}); totalBales+=n; }
+  const bFirst=CAP; cargas[bFirst].q=1; cargas[bFirst].color=QUAL[1].c;   // ISLAND B first position = grey (intermediate)
+}
+function balesInYard(){ let s=0; cargas.forEach(c=>{ if(c.el) s+=c.filled; }); return s; }
+function balesInBuffer(){ return buffer.reduce((a,b)=>a+b.filled,0); }
+
+// pick 5 loads that form a MIX of qualities (some green, some red, some grey)
+function selectMix(){
+  const byQ=[[],[],[]]; cargas.forEach((c,g)=>{ if(c.el&&c.filled>0) byQ[c.q].push(g); });
+  const order=[2,0,1,2,0]; const picks=[];   // high, low, mid, high, low
+  for(const q of order){ let g=byQ[q].shift();
+    if(g===undefined){ for(let qq=0;qq<3;qq++){ if(byQ[qq].length){ g=byQ[qq].shift(); break; } } }
+    if(g!==undefined) picks.push(g); }
+  return picks;
+}
+
+// ========== STORING ==========
+async function storeLoad(id,g){
+  const c=cargas[g]; makeLoadEl(c); const p=posFor(g);
+  placeInstant(c.el,p.x,p.y); c.el.style.opacity='.4'; refreshDots(c);
+  const ctr=centerOf(g);
+  for(let k=0;k<c.n;k++){
+    if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
+    const fly=makeFly(c.color); place(fly,TRUCK_BED.x,TRUCK_BED.y); fly.style.opacity='0'; requestAnimationFrame(()=>fly.style.opacity='1');
+    await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){fly.remove();return;}
+    const bc=boxCenterYard(g); place(fly,ctr.x,ctr.y); parkFork(bc.x,bc.y,'R'); await wait(moveMs()); if(!alive(id)){fly.remove();return;}
+    fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
+    c.filled++; c.el.style.opacity='1'; refreshDots(c); updateStats(); await wait(90);
+  }
+}
+
+// ========== SEND TO BUFFER (stage a quality mix) ==========
+async function sendLoadToBuffer(id,g){
+  const c=cargas[g]; const ctr=centerOf(g);
+  const bl={id:c.id,q:c.q,color:c.color,n:c.n,filled:0,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id};
+  makeLoadEl(bl); const bp=bufPos(buffer.length); placeInstant(bl.el,bp.x,bp.y); bl.el.style.opacity='.4'; refreshDots(bl);
+  buffer.push(bl);
+  for(let k=0;k<c.n;k++){
+    if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
+    const yc=boxCenterYard(g); await moveForkTo(yc.x,yc.y,'L'); if(!alive(id))return;
+    c.filled--; refreshDots(c);
+    const fly=makeFly(c.color); place(fly,ctr.x,ctr.y);
+    const i=buffer.indexOf(bl), t=bufCenter(i);
+    const bbc=boxCenterBuf(i); place(fly,t.x,t.y); parkFork(bbc.x,bbc.y,'L'); await wait(moveMs()); if(!alive(id)){fly.remove();return;}
+    fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
+    bl.filled++; bl.el.style.opacity='1'; refreshDots(bl); updateStats(); await wait(70);
+  }
+  c.el.style.opacity='0'; setTimeout(()=>{c.el&&c.el.remove(); c.el=null;},250);
+}
+
+// ========== CONSUME (alternate buffer loads → production) ==========
+function pushFeed(q){
+  const f=document.getElementById('feed'); if(!f) return;
+  const s=document.createElement('span'); s.className='fmini'; s.style.background=QUAL[q].c; f.appendChild(s);
+  while(f.children.length>48) f.removeChild(f.firstChild);
+  feedCount[q]++;
+}
+async function consumeBuffer(id){
+  while(buffer.some(b=>b.filled>0)){
+    for(let i=0;i<buffer.length;i++){
+      const bl=buffer[i]; if(bl.filled<=0) continue;
+      if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
+      const bbc=boxCenterBuf(i); await moveForkTo(bbc.x,bbc.y,'L'); if(!alive(id))return;
+      bl.filled--; refreshDots(bl);
+      const fly=makeFly(bl.color); place(fly,bufCenter(i).x,bufCenter(i).y);
+      const fc=factCenter(); place(fly,fc.x,fc.y); parkFork(FACT_INTAKE.x+CARGA_W/2,FACT_INTAKE.y+CARGA_H/2,'L');
+      await wait(moveMs()); if(!alive(id)){fly.remove();return;}
+      fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
+      toProdB++; pushFeed(bl.q); updateStats(); await wait(70);
+    }
+    const gone=buffer.filter(b=>b.filled<=0);
+    gone.forEach(b=>{ b.el.style.opacity='0'; setTimeout(()=>b.el&&b.el.remove(),250); });
+    buffer=buffer.filter(b=>b.filled>0);
+    buffer.forEach((b,i)=>place(b.el,bufPos(i).x,bufPos(i).y));
+    updateStats();
+  }
+}
+
+// ---------- mode control ----------
+function clearAll(){
+  buffer.forEach(b=>b.el&&b.el.remove()); cargas.forEach(c=>c.el&&c.el.remove());
+  cargas=[]; buffer=[]; toProdB=0; feedCount=[0,0,0];
+  const f=document.getElementById('feed'); if(f) f.innerHTML='';
+}
+function prefillYardFull(){ cargas.forEach((c,g)=>{ makeLoadEl(c); const p=posFor(g); placeInstant(c.el,p.x,p.y); c.filled=c.n; refreshDots(c); }); }
+
+async function startMode(m){
+  runId++; const id=runId; mode=m;
+  running=true; document.getElementById('play').textContent='⏸ Pause';
+  if(paused_resolve){ paused_resolve(); paused_resolve=null; }
+  ['mStore','mBuffer','mConsume'].forEach(x=>document.getElementById(x).classList.remove('active'));
+  document.getElementById(m==='store'?'mStore':m==='buffer'?'mBuffer':'mConsume').classList.add('active');
+  await Promise.resolve(); clearAll();
+  place(fork(), TRUCK_BED.x-30, TRUCK_BED.y);
+
+  if(m==='store'){
+    genCargas(); initInPlay=totalBales; setPhase('store');
+    document.getElementById('sub').textContent='Storing: truck adds bales into loads. Color = quality (red=low, grey=intermediate, green=high).';
+    updateStats();
+    for(let g=0; g<TOTAL; g++){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await storeLoad(id,g); }
+
+  } else if(m==='buffer'){
+    genCargas(); prefillYardFull(); initInPlay=totalBales; setPhase('buffer');
+    document.getElementById('sub').textContent='Send to Buffer — quality picking: deliberately stage a MIX (some green, some red, some grey) in the buffer.';
+    updateStats();
+    const picks=selectMix();
+    for(const g of picks){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await sendLoadToBuffer(id,g); }
+
+  } else {
+    genCargas(); prefillYardFull();
+    const picks=selectMix(); buffer=[];
+    picks.forEach((g,n)=>{ const yc=cargas[g]; if(yc.el){ yc.el.remove(); yc.el=null; } yc.filled=0;
+      const bl={id:yc.id,q:yc.q,color:yc.color,n:yc.n,filled:yc.n,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id};
+      makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y); refreshDots(bl); buffer.push(bl); });
+    initInPlay=balesInBuffer(); setPhase('consume');
+    document.getElementById('sub').textContent='Consume: alternate across the mixed buffer → production receives a balanced blend (see feed strip).';
+    place(fork(), bufPos(0).x-24, bufPos(0).y-12); updateStats();
+    await consumeBuffer(id);
+  }
+}
+function setPhase(p){ const el=document.getElementById('phase');
+  if(p==='store'){ el.textContent='Phase: Storing (truck)'; el.className='phase-store'; }
+  else if(p==='buffer'){ el.textContent='Phase: Send to Buffer'; el.className='phase-buffer'; }
+  else { el.textContent='Phase: Consume → Production'; el.className='phase-consume'; } }
+function updateStats(){
+  const inPlay = mode==='consume' ? balesInBuffer() : balesInYard();
+  document.getElementById('sInYard').textContent=inPlay; document.getElementById('sCap').textContent=initInPlay||0;
+  document.getElementById('sBufLoads').textContent=buffer.length;
+  document.getElementById('sToProd').textContent=toProdB;
+  const tot=feedCount[0]+feedCount[1]+feedCount[2];
+  document.getElementById('sMix').textContent = tot? `${feedCount[2]} green · ${feedCount[1]} grey · ${feedCount[0]} red` : '–';
+}
+
+// ---------- fit / controls ----------
+function fitStage(){ const wrap=document.getElementById('stageWrap');
+  const sw=stage.offsetWidth||1, scale=Math.min(1,(wrap.clientWidth-24)/sw); stage.style.transform='scale('+scale+')'; }
+window.addEventListener('resize',fitStage);
+document.getElementById('mStore').onclick=()=>startMode('store');
+document.getElementById('mBuffer').onclick=()=>startMode('buffer');
+document.getElementById('mConsume').onclick=()=>startMode('consume');
+document.getElementById('play').onclick=e=>{ running=!running; e.target.textContent=running?'⏸ Pause':'▶ Play';
+  if(running&&paused_resolve){paused_resolve();paused_resolve=null;} };
+document.getElementById('reset').onclick=()=>startMode(mode);
+document.getElementById('sBufMax').textContent=BUF_MAX;
+document.getElementById('speed').oninput=e=>{ speedMult=parseFloat(e.target.value); document.getElementById('spd').textContent=speedMult.toFixed(1)+'×'; setMoveVars(); };
+
+// ---------- go ----------
+buildScene(); startMode('store');
+</script>
+</body>
+</html>
