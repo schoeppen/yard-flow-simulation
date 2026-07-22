@@ -110,7 +110,7 @@ const T={
     factory:'Production · Recycling', feedTitle:'Feed to production (order) →',
     bufferZone:'Buffer (~5 loads)', stagedMix:'Staged MIX of qualities',
     reception:'Reception · Truck', unload:'Unload bale by bale →<br>ISLAND A→B→C, row by row',
-    island:'ISLAND', row:'R', load:'Load', isla:'Island', green:'green', grey:'grey', red:'red' },
+    island:'ISLAND', row:'R', load:'Load', isla:'Island', green:'green', grey:'grey', red:'red', slot:'Slot' },
   es:{ title:'Patio MP — Simulación de selección por calidad',
     store:'📦 Almacenar', buffer:'📥 Enviar al búfer', consume:'♻️ Consumir',
     pause:'⏸ Pausar', play:'▶ Reproducir', reset:'↺ Reiniciar', speed:'Velocidad', langBtn:'EN',
@@ -125,7 +125,7 @@ const T={
     factory:'Producción · Reciclaje', feedTitle:'Alimentación a producción (orden) →',
     bufferZone:'Búfer (~5 cargas)', stagedMix:'MEZCLA de calidades preparada',
     reception:'Recepción · Camión', unload:'Descarga paca por paca →<br>ISLA A→B→C, fila por fila',
-    island:'ISLA', row:'F', load:'Carga', isla:'Isla', green:'verde', grey:'gris', red:'rojo' }
+    island:'ISLA', row:'F', load:'Carga', isla:'Isla', green:'verde', grey:'gris', red:'rojo', slot:'Puesto' }
 };
 let lang='en';
 function L(){ return T[lang]; }
@@ -201,7 +201,10 @@ function buildScene(){
   const qt=document.createElement('div'); qt.className='qtitle';
   qt.style.cssText=`left:${BUF_X-14}px;top:${BUF_Y0-46}px;width:200px`; qt.textContent=t.stagedMix; stage.appendChild(qt);
   for(let i=0;i<BUF_MAX;i++){ const p=bufPos(i); const b=document.createElement('div'); b.className='bslot';
-    b.style.cssText=`left:${p.x}px;top:${p.y}px;width:${CARGA_W}px;height:${CARGA_H}px`; stage.appendChild(b); }
+    b.style.cssText=`left:${p.x}px;top:${p.y}px;width:${CARGA_W}px;height:${CARGA_H}px`; stage.appendChild(b);
+    const nm=document.createElement('div'); nm.className='legend';
+    nm.style.cssText=`left:${p.x+CARGA_W+8}px;top:${p.y+CARGA_H/2-8}px;font-weight:700;color:#1f8a89`;
+    nm.textContent=`${t.slot} ${i+1}`; stage.appendChild(nm); }
 
   const ar=document.createElement('div'); ar.className='arrow';
   ar.style.cssText=`left:${YARD_X0}px;top:${TOP-64}px`;
@@ -267,12 +270,16 @@ function genCargas(){ cargas=[]; totalBales=0; seq=0; const rnd=seededRandom(202
   const bFirst=CAP; cargas[bFirst].q=1; cargas[bFirst].color=QUAL[1].c; }   // ISLAND B first = grey
 function balesInYard(){ let s=0; cargas.forEach(c=>{ if(c.el) s+=c.filled; }); return s; }
 function balesInBuffer(){ return buffer.reduce((a,b)=>a+b.filled,0); }
-function selectMix(){
-  const byQ=[[],[],[]]; cargas.forEach((c,g)=>{ if(c.el&&c.filled>0) byQ[c.q].push(g); });
-  const order=[2,0,1,2,0]; const picks=[];
-  for(const q of order){ let g=byQ[q].shift();
-    if(g===undefined){ for(let qq=0;qq<3;qq++){ if(byQ[qq].length){ g=byQ[qq].shift(); break; } } }
-    if(g!==undefined) picks.push(g); }
+// alternate strictly across islands A→B→C→A→B, taking the oldest available load from each in turn
+function selectIslandRR(){
+  const base=ISLANDS.map((_,i)=>i*CAP), ptr=ISLANDS.map(()=>0), picks=[]; let isl=0, guard=0;
+  while(picks.length<BUF_MAX && guard<TOTAL*2){
+    guard++;
+    const g=base[isl]+ptr[isl];
+    if(ptr[isl]<CAP && cargas[g] && cargas[g].el && cargas[g].filled>0){ picks.push(g); ptr[isl]++; }
+    else { ptr[isl]++; }
+    isl=(isl+1)%ISLANDS.length;
+  }
   return picks;
 }
 
@@ -360,11 +367,11 @@ async function startMode(m){
     for(let g=0; g<TOTAL; g++){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await storeLoad(id,g); }
   } else if(m==='buffer'){
     genCargas(); prefillYardFull(); initInPlay=totalBales; setPhase('buffer'); document.getElementById('sub').textContent=L().subBuffer; updateStats();
-    const picks=selectMix();
+    const picks=selectIslandRR();
     for(const g of picks){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await sendLoadToBuffer(id,g); }
   } else {
     genCargas(); prefillYardFull();
-    const picks=selectMix(); buffer=[];
+    const picks=selectIslandRR(); buffer=[];
     picks.forEach((g,n)=>{ const yc=cargas[g]; if(yc.el){ yc.el.remove(); yc.el=null; } yc.filled=0;
       const bl={id:yc.id,q:yc.q,color:yc.color,n:yc.n,filled:yc.n,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id};
       makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y); refreshDots(bl); buffer.push(bl); });
