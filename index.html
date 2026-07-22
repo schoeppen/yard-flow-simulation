@@ -64,7 +64,9 @@
   .driver{position:absolute;width:214px;border-radius:18px;background:#1A1A2E;color:#fff;overflow:hidden;border:1px solid #2a2c47;box-shadow:0 10px 26px rgba(20,25,60,.28)}
   .driver .bar{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;font-size:11px;color:#c9cde6;background:#141428}
   .driver .bar .brand{font-weight:800;letter-spacing:.2px}
-  .driver .bar .brand i{width:8px;height:8px;border-radius:50%;background:#38BAB9;display:inline-block;margin-right:6px;vertical-align:middle}
+  .driver .bar .brand .logo{width:22px;height:22px;display:inline-block;vertical-align:middle;margin-right:7px}
+  .driver .bar .brand .logo svg{display:block;width:100%;height:100%}
+  .driver .bar .live{width:8px;height:8px;border-radius:50%;background:#38BAB9;display:inline-block;margin-left:6px;vertical-align:middle}
   .driver .brand b{color:#38BAB9;font-style:normal}
   .driver .body{padding:12px 14px 14px;min-height:120px}
   .driver .task{display:inline-block;background:#6347FF;color:#fff;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.3px}
@@ -146,6 +148,7 @@ const T={
 };
 let lang='en';
 function L(){ return T[lang]; }
+const LOGO_SVG='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="49" fill="#ffffff"/><path d="M35 27 C 64 24 63 49 50 51 C 37 53 36 76 66 73" fill="none" stroke="#0d1030" stroke-width="16" stroke-linecap="round"/></svg>';
 
 // ---------- config ----------
 const ISLANDS=[{id:'A'},{id:'B'},{id:'C'}];
@@ -250,8 +253,8 @@ function buildScene(){
   });
   const fw=document.createElement('div'); fw.innerHTML=FORK_SVG; stage.appendChild(fw.firstChild);
 
-  const dv=document.createElement('div'); dv.className='driver'; dv.style.cssText='left:16px;top:14px';
-  dv.innerHTML=`<div class="bar"><span class="brand"><i></i>Safi <b>AI</b> · ${t.dTitle.split('· ')[1]||''}</span><span>▮▮▮ 100%</span></div><div class="body" id="driverBody"></div>`;
+  const dv=document.createElement('div'); dv.className='driver'; dv.id='driver'; dv.style.cssText='left:16px;top:14px';
+  dv.innerHTML=`<div class="bar"><span class="brand"><span class="logo">${LOGO_SVG}</span>Safi <b>AI</b> · ${t.dTitle.split('· ')[1]||''}<span class="live"></span></span><span>▮▮▮</span></div><div class="body" id="driverBody"></div>`;
   stage.appendChild(dv); driverIdle();
 
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y); fitStage();
@@ -329,7 +332,7 @@ function selectIslandRR(){
 // ========== STORING ==========
 async function storeLoad(id,g){
   const c=cargas[g]; makeLoadEl(c); const p=posFor(g);
-  placeInstant(c.el,p.x,p.y); c.el.style.opacity='.4'; refreshDots(c); driverStore(g);
+  placeInstant(c.el,p.x,p.y); c.el.style.opacity='.4'; refreshDots(c);
   const ctr=centerOf(g);
   for(let k=0;k<c.n;k++){
     if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
@@ -404,6 +407,7 @@ async function startMode(m){
   ['mStore','mBuffer','mConsume'].forEach(x=>document.getElementById(x).classList.remove('active'));
   document.getElementById(m==='store'?'mStore':m==='buffer'?'mBuffer':'mConsume').classList.add('active');
   await Promise.resolve(); clearAll();
+  const dp=document.getElementById('driver'); if(dp) dp.style.display=(m==='store')?'none':'block';
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y);
 
   if(m==='store'){
