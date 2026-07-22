@@ -61,6 +61,21 @@
   #fork{position:absolute;z-index:40;pointer-events:none;transition:left var(--mv) linear, top var(--mv) linear;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
   #truck{position:absolute;z-index:20;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2))}
   .legend{position:absolute;font-size:11px;color:#8890b5}
+  .driver{position:absolute;width:214px;border-radius:18px;background:#1A1A2E;color:#fff;overflow:hidden;border:1px solid #2a2c47;box-shadow:0 10px 26px rgba(20,25,60,.28)}
+  .driver .bar{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;font-size:11px;color:#c9cde6;background:#141428}
+  .driver .bar .brand{font-weight:800;letter-spacing:.2px}
+  .driver .bar .brand i{width:8px;height:8px;border-radius:50%;background:#38BAB9;display:inline-block;margin-right:6px;vertical-align:middle}
+  .driver .brand b{color:#38BAB9;font-style:normal}
+  .driver .body{padding:12px 14px 14px;min-height:120px}
+  .driver .task{display:inline-block;background:#6347FF;color:#fff;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.3px}
+  .driver .chip{display:flex;align-items:center;gap:10px;margin:10px 0 8px}
+  .driver .chipbox{border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.3)}
+  .driver .chipbox .pac{display:flex;gap:2px;margin-top:2px}
+  .driver .chipbox .pac i{width:7px;height:7px;border-radius:2px;background:rgba(255,255,255,.92)}
+  .driver .big{font-size:15px;font-weight:800}
+  .driver .row{font-size:12px;margin-top:5px;line-height:1.35;color:#e7e9f5}
+  .driver .lab{color:#38BAB9;font-weight:700}
+  .driver .arrow{color:#6b7186;margin:3px 0;font-size:13px}
 </style>
 </head>
 <body>
@@ -110,7 +125,8 @@ const T={
     factory:'Production · Recycling', feedTitle:'Feed to production (order) →',
     bufferZone:'Buffer (~5 loads)', stagedMix:'Staged MIX of qualities',
     reception:'Reception · Truck', unload:'Unload bale by bale →<br>ISLAND A→B→C, row by row',
-    island:'ISLAND', row:'R', load:'Load', isla:'Island', green:'green', grey:'grey', red:'red', slot:'Slot' },
+    island:'ISLAND', row:'R', load:'Load', isla:'Island', green:'green', grey:'grey', red:'red', slot:'Slot',
+    dTitle:'Safi AI · Driver', dStore:'STORE LOAD', dPick:'PICK LOAD', dConsume:'PICK BALE', dFrom:'From', dTo:'To', dTruck:'Truck', pos:'pos', dIdle:'Waiting…' },
   es:{ title:'Patio MP — Simulación de selección por calidad',
     store:'📦 Almacenar', buffer:'📥 Enviar al búfer', consume:'♻️ Consumir',
     pause:'⏸ Pausar', play:'▶ Reproducir', reset:'↺ Reiniciar', speed:'Velocidad', langBtn:'EN',
@@ -125,7 +141,8 @@ const T={
     factory:'Producción · Reciclaje', feedTitle:'Alimentación a producción (orden) →',
     bufferZone:'Búfer (~5 cargas)', stagedMix:'MEZCLA de calidades preparada',
     reception:'Recepción · Camión', unload:'Descarga paca por paca →<br>ISLA A→B→C, fila por fila',
-    island:'ISLA', row:'F', load:'Carga', isla:'Isla', green:'verde', grey:'gris', red:'rojo', slot:'Puesto' }
+    island:'ISLA', row:'F', load:'Carga', isla:'Isla', green:'verde', grey:'gris', red:'rojo', slot:'Puesto',
+    dTitle:'Safi AI · Operador', dStore:'ALMACENAR', dPick:'RECOGER CARGA', dConsume:'RECOGER PACA', dFrom:'Desde', dTo:'Hacia', dTruck:'Camión', pos:'pos', dIdle:'Esperando…' }
 };
 let lang='en';
 function L(){ return T[lang]; }
@@ -232,8 +249,34 @@ function buildScene(){
     }
   });
   const fw=document.createElement('div'); fw.innerHTML=FORK_SVG; stage.appendChild(fw.firstChild);
+
+  const dv=document.createElement('div'); dv.className='driver'; dv.style.cssText='left:16px;top:14px';
+  dv.innerHTML=`<div class="bar"><span class="brand"><i></i>Safi <b>AI</b> · ${t.dTitle.split('· ')[1]||''}</span><span>▮▮▮ 100%</span></div><div class="body" id="driverBody"></div>`;
+  stage.appendChild(dv); driverIdle();
+
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y); fitStage();
 }
+// ---------- driver screen (Safi-app style) ----------
+function locLabel(g){ const t=L(); const isla=ISLANDS[Math.floor(g/CAP)].id; const within=g%CAP;
+  const fila=Math.floor(within/SLOTS_PER_FILA)+1, pos=within%SLOTS_PER_FILA+1;
+  return `${t.isla} ${isla} · ${t.row}${fila} · ${t.pos} ${pos}`; }
+function chipHTML(color,n){ let p=''; for(let i=0;i<n;i++)p+='<i></i>';
+  return `<div class="chipbox" style="background:${color};width:54px;height:40px"><div class="pac">${p}</div></div>`; }
+function baleChipHTML(color){ return `<div class="chipbox" style="background:${color};width:32px;height:32px"></div>`; }
+function setDriverBody(h){ const b=document.getElementById('driverBody'); if(b) b.innerHTML=h; }
+function driverIdle(){ const t=L(); setDriverBody(`<div class="task" style="background:#3a3c5c">${t.dIdle}</div>`); }
+function driverStore(g){ const t=L(); const c=cargas[g];
+  setDriverBody(`<div class="task">${t.dStore}</div><div class="chip">${chipHTML(c.color,c.n)}<div class="big">${t.load} ${c.id}</div></div>`+
+   `<div class="row"><span class="lab">${t.dFrom}:</span> ${t.dTruck}</div><div class="arrow">↓</div>`+
+   `<div class="row"><span class="lab">${t.dTo}:</span> ${locLabel(g)}</div>`); }
+function driverPick(g,slotNum){ const t=L(); const c=cargas[g];
+  setDriverBody(`<div class="task">${t.dPick}</div><div class="chip">${chipHTML(c.color,c.n)}<div class="big">${t.load} ${c.id}</div></div>`+
+   `<div class="row"><span class="lab">${t.dFrom}:</span> ${locLabel(g)}</div><div class="arrow">↓</div>`+
+   `<div class="row"><span class="lab">${t.dTo}:</span> ${t.slot} ${slotNum}</div>`); }
+function driverConsume(slotNum,color){ const t=L();
+  setDriverBody(`<div class="task">${t.dConsume}</div><div class="chip">${baleChipHTML(color)}<div class="big">${t.slot} ${slotNum}</div></div>`+
+   `<div class="row"><span class="lab">${t.dFrom}:</span> ${t.slot} ${slotNum}</div><div class="arrow">↓</div>`+
+   `<div class="row"><span class="lab">${t.dTo}:</span> ${t.factory}</div>`); }
 
 // ---------- helpers ----------
 function moveMs(){ return Math.max(42, Math.round(BASE_MOVE/speedMult)); }
@@ -286,7 +329,7 @@ function selectIslandRR(){
 // ========== STORING ==========
 async function storeLoad(id,g){
   const c=cargas[g]; makeLoadEl(c); const p=posFor(g);
-  placeInstant(c.el,p.x,p.y); c.el.style.opacity='.4'; refreshDots(c);
+  placeInstant(c.el,p.x,p.y); c.el.style.opacity='.4'; refreshDots(c); driverStore(g);
   const ctr=centerOf(g);
   for(let k=0;k<c.n;k++){
     if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
@@ -303,7 +346,7 @@ async function sendLoadToBuffer(id,g){
   const c=cargas[g]; const ctr=centerOf(g);
   const bl={id:c.id,q:c.q,color:c.color,n:c.n,filled:0,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id};
   makeLoadEl(bl); const bp=bufPos(buffer.length); placeInstant(bl.el,bp.x,bp.y); bl.el.style.opacity='.4'; refreshDots(bl);
-  buffer.push(bl);
+  buffer.push(bl); driverPick(g, buffer.length);
   for(let k=0;k<c.n;k++){
     if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
     const yc=boxCenterYard(g); await moveForkTo(yc.x,yc.y,'L'); if(!alive(id))return;
@@ -329,6 +372,7 @@ async function consumeBuffer(id){
     for(let i=0;i<buffer.length;i++){
       const bl=buffer[i]; if(bl.filled<=0) continue;
       if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
+      driverConsume(i+1, bl.color);
       const bbc=boxCenterBuf(i); await moveForkTo(bbc.x,bbc.y,'L'); if(!alive(id))return;
       bl.filled--; refreshDots(bl);
       const fly=makeFly(bl.color); place(fly,bufCenter(i).x,bufCenter(i).y);
