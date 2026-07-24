@@ -41,7 +41,7 @@
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--teal);cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}
   input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radius:50%;background:var(--teal);cursor:pointer}
   .stats{display:flex;gap:12px;padding:9px 20px;background:rgba(255,255,255,.72);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap;align-items:center}
-  .qlegend{display:flex;align-items:center;gap:9px;font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-left:auto}
+  .qlegend{display:flex;align-items:center;gap:9px;font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
   .qbar{width:150px;height:10px;border-radius:6px;background:linear-gradient(90deg,var(--qlow),var(--qmid),var(--qhigh));box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
   #stageWrap{flex:1;overflow:auto;position:relative}
   #stage{position:relative;transform-origin:top left}
@@ -180,12 +180,13 @@ const LOGO_SVG='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><d
 // ================= config =================
 const LINEAS=6, DEPTH=6, TOTAL=LINEAS*DEPTH;
 const QUAL=[{c:'#e5484d'},{c:'#8b93a7'},{c:'#30a46c'}];         // 0 low(red) 1 mid(grey) 2 high(green)
-const Q_UNKNOWN='#8a90a6';
+const Q_UNKNOWN='#39406a';   // unscanned = dark slate/indigo (distinct from grey = intermediate)
+const Q_UNKNOWN_HATCH='repeating-linear-gradient(45deg,#434a78,#434a78 7px,#2f3457 7px,#2f3457 14px)';
 const LINEA_Q=[2,2,1,1,0,0];                                    // AFTER: pure quality columns
 const SLOT_W=76, SLOT_H=50, LOAD_W=68, LOAD_H=42, FLY=20;
-const LINEA_X0=580, COL_PITCH=88, WALL_Y=150, COL_Y0=192, ROW_PITCH=54;
+const LINEA_X0=470, COL_PITCH=88, WALL_Y=150, COL_Y0=192, ROW_PITCH=54;
 const PER_TRUCK=1;   // one truck delivers exactly one load
-const Q_TARGET=80, Q_BAND=[77,83], STOP_THRESH=62, Q_WINDOW=180;
+const Q_TARGET=80, Q_BAND=[77,83], STOP_THRESH=62, Q_WINDOW=100;
 let BUF_MAX=3, BUF_X=300, BUF_Y0=60, BUF_PITCH=60;
 let TRUCK_BED={}, SCAN={}, FACT_INTAKE={};
 
@@ -226,7 +227,7 @@ function buildScene(){
   const fwd2=document.createElement('div'); fwd2.className='feedwrap'; fwd2.style.cssText=`left:30px;top:${yB+78}px;width:220px`;
   fwd2.innerHTML=`${t.feedTitleB}<div class="feed" id="feedB"></div>`; stage.appendChild(fwd2);
 
-  const cardW=W-300; qCW=cardW-28; qCH=150;
+  const cardW=Math.min(W-300, 760); qCW=cardW-28; qCH=150;
   const qc=document.createElement('div'); qc.className='qcard'; qc.id='qcard'; qc.style.cssText=`left:250px;top:${yB-16}px;width:${cardW}px;display:none`;
   qc.innerHTML=`<div class="qtop"><div><div class="qt" id="qTitle"></div><div class="qs" id="qSub"></div></div></div>`+
     `<canvas id="qcanvas" width="${qCW}" height="${qCH}" style="width:${qCW}px;height:${qCH}px"></canvas>`;
@@ -238,7 +239,7 @@ function buildScene(){
   bz.innerHTML=`<div class="bt">${t.bufferZone}</div>`; stage.appendChild(bz);
   const qt=document.createElement('div'); qt.className='qtitle'; qt.style.cssText=`left:${BUF_X-14}px;top:${BUF_Y0-44}px;width:200px`; qt.textContent=t.stagedMix; stage.appendChild(qt);
   for(let i=0;i<BUF_MAX;i++){ const p=bufPos(i); const b=document.createElement('div'); b.className='bslot'; b.style.cssText=`left:${p.x}px;top:${p.y}px;width:${LOAD_W}px;height:${LOAD_H+4}px`; stage.appendChild(b);
-    const nm=document.createElement('div'); nm.className='legend'; nm.style.cssText=`left:${p.x+LOAD_W+8}px;top:${p.y+4}px;font-weight:700;color:#1f8a89`; nm.textContent=`${t.slot} ${i+1}`; stage.appendChild(nm); }
+    const nm=document.createElement('div'); nm.className='legend'; nm.style.cssText=`left:${p.x+2}px;top:${p.y-14}px;font-size:9px;font-weight:800;color:#1f8a89;text-transform:uppercase;letter-spacing:.5px`; nm.textContent=`${t.slot} ${i+1}`; stage.appendChild(nm); }
 
   // wall + lineas
   const wallW=(LINEAS-1)*COL_PITCH+SLOT_W+8;
@@ -288,7 +289,7 @@ function makeLoadEl(c){
 }
 function renderLoad(c){
   if(!c.el) return;
-  if(c.q==null){ c.el.style.background=Q_UNKNOWN; c.el.innerHTML='?'; c.dots=null; return; }
+  if(c.q==null){ c.el.style.background=Q_UNKNOWN_HATCH; c.el.innerHTML='?'; c.dots=null; return; }
   c.el.style.background=QUAL[c.q].c; let dots=''; for(let i=0;i<c.n;i++) dots+='<i></i>';
   c.el.innerHTML=`<div class="pacas">${dots}</div>`; c.dots=[...c.el.querySelectorAll('.pacas i')]; refreshDots(c);
 }
@@ -468,7 +469,7 @@ function applyStatic(){ const t=L(); document.documentElement.lang=lang;
   document.getElementById('lang').textContent=t.langBtn; document.getElementById('play').textContent=running?t.pause:t.play; document.getElementById('reset').textContent=t.reset;
   document.getElementById('lblSpeed').textContent=t.speed;
   document.getElementById('lblQuality').textContent=t.quality; document.getElementById('lblLow').textContent=t.low; document.getElementById('lblHigh').textContent=t.high; document.getElementById('lblGrey').textContent=t.greynote;
-  const qtl=document.getElementById('qTitle'); if(qtl){ qtl.textContent=t.qTitle; document.getElementById('qSub').textContent=t.qSub; document.getElementById('qLiveLbl').textContent=t.qLiveLbl; }
+  const qtl=document.getElementById('qTitle'); if(qtl){ qtl.textContent=t.qTitle; const qs=document.getElementById('qSub'); if(qs) qs.textContent=t.qSub; }
   drawQ(); }
 function setLang(l){ lang=l; applyStatic(); buildScene(); startMode(mode); }
 
@@ -486,6 +487,7 @@ document.getElementById('speed').oninput=e=>{ speedMult=parseFloat(e.target.valu
 
 // ================= go =================
 applyStatic(); buildScene(); startMode('store');
+window.addEventListener('load',fitStage); setTimeout(fitStage,200);
 </script>
 </body>
 </html>
