@@ -351,16 +351,18 @@ function parkFork(cx,cy,side){ const f=fork();
   else { f.style.transform='scaleX(-1)'; place(f, cx-14-FORK_W, cy-FORK_H/2); } }
 async function moveForkTo(cx,cy,side){ parkFork(cx,cy,side); await wait(moveMs()); }
 
-function makeLoadEl(c){
-  const t=L();
-  const el=document.createElement('div'); el.className='carga';
-  el.style.width=CARGA_W+'px'; el.style.height=CARGA_H+'px'; el.style.background=c.color; el.style.setProperty('--mv',moveMs()+'ms');
+function renderCargaKnown(c){ const t=L(); c.el.style.background=c.color;
   let dots=''; for(let i=0;i<c.n;i++) dots+='<i></i>';
   const title = c.origin ? `${t.isla} ${c.origin} · C${c.id}` : `${t.load} ${c.id}`;
-  el.innerHTML=`<div>${title}</div><div class="pacas">${dots}</div>`;
-  stage.appendChild(el); c.el=el; c.dots=[...el.querySelectorAll('.pacas i')]; return el;
+  c.el.innerHTML=`<div>${title}</div><div class="pacas">${dots}</div>`; c.dots=[...c.el.querySelectorAll('.pacas i')]; refreshDots(c); }
+function renderCargaUnknown(c){ c.el.style.background=Q_UNKNOWN_HATCH; c.el.innerHTML='<div style="font-size:17px;font-weight:800">?</div>'; c.dots=[]; }
+function makeLoadEl(c){
+  const el=document.createElement('div'); el.className='carga';
+  el.style.width=CARGA_W+'px'; el.style.height=CARGA_H+'px'; el.style.setProperty('--mv',moveMs()+'ms');
+  stage.appendChild(el); c.el=el; renderCargaKnown(c); return el;
 }
-function refreshDots(c){ c.dots.forEach((d,i)=>d.classList.toggle('on', i<c.filled)); }
+function refreshDots(c){ if(c.dots) c.dots.forEach((d,i)=>d.classList.toggle('on', i<c.filled)); }
+async function animateBalesIn(id,c){ if(!c.dots) return; for(let k=0;k<c.n;k++){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; c.filled=k+1; refreshDots(c); await wait(90); } }
 function makeFly(color){ const el=document.createElement('div'); el.className='fly';
   el.style.width=FLY+'px'; el.style.height=FLY+'px'; el.style.background=color; el.style.setProperty('--mv',moveMs()+'ms');
   stage.appendChild(el); return el; }
@@ -385,31 +387,24 @@ function selectIslandRR(){
   return picks;
 }
 
-// ========== STORING ==========
+// ========== STORING (full load: pick unknown → scan → store, same as Alen) ==========
 async function storeLoad(id,g){
-  const c=cargas[g];
-  // --- Safi AI scan: load arrives unknown, gets scanned, material revealed ---
-  const sc=document.createElement('div'); sc.className='carga';
-  sc.style.cssText=`width:${CARGA_W}px;height:${CARGA_H}px;background:${Q_UNKNOWN_HATCH};font-size:18px`; sc.innerHTML='?';
-  stage.appendChild(sc); placeInstant(sc, TRUCK_BED.x-CARGA_W/2, TRUCK_BED.y-CARGA_H/2); sc.style.opacity='0'; requestAnimationFrame(()=>sc.style.opacity='1');
+  const c=cargas[g]; const p=posFor(g);
+  // load arrives at the truck as a whole, UNKNOWN
+  makeLoadEl(c); renderCargaUnknown(c); c.filled=0;
+  placeInstant(c.el, TRUCK_BED.x-CARGA_W/2, TRUCK_BED.y-CARGA_H/2); c.el.style.opacity='0'; requestAnimationFrame(()=>c.el.style.opacity='1');
   driverScan();
-  await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){sc.remove();return;}
-  place(sc, SCAN.x-CARGA_W/2, SCAN.y-CARGA_H/2); await moveForkTo(SCAN.x,SCAN.y,'L'); if(!alive(id)){sc.remove();return;}
-  await wait(moveMs()*0.5); await flashScan(); sc.style.background=c.color; sc.innerHTML=''; driverMaterial(c);
-  await wait(moveMs()*0.6); if(!alive(id)){sc.remove();return;}
-  sc.style.opacity='0'; setTimeout(()=>sc.remove(),200);
-  // --- store bale by bale into the island ---
-  makeLoadEl(c); const p=posFor(g);
-  placeInstant(c.el,p.x,p.y); c.el.style.opacity='.4'; refreshDots(c);
-  const ctr=centerOf(g);
-  for(let k=0;k<c.n;k++){
-    if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
-    const fly=makeFly(c.color); place(fly,TRUCK_BED.x,TRUCK_BED.y); fly.style.opacity='0'; requestAnimationFrame(()=>fly.style.opacity='1');
-    await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){fly.remove();return;}
-    const bc=boxCenterYard(g); place(fly,ctr.x,ctr.y); parkFork(bc.x,bc.y,'R'); await wait(moveMs()); if(!alive(id)){fly.remove();return;}
-    fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
-    c.filled++; c.el.style.opacity='1'; refreshDots(c); updateStats(); await wait(90);
-  }
+  await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){c.el.remove();c.el=null;return;}
+  // carry the whole load to the Safi AI scan station
+  place(c.el, SCAN.x-CARGA_W/2, SCAN.y-CARGA_H/2); await moveForkTo(SCAN.x,SCAN.y,'L'); if(!alive(id)){c.el.remove();c.el=null;return;}
+  await wait(moveMs()*0.5); await flashScan();
+  renderCargaKnown(c); driverMaterial(c);                 // material revealed
+  await wait(moveMs()*0.6); if(!alive(id)){c.el.remove();c.el=null;return;}
+  // carry the whole load to its island slot, then bales settle in
+  driverStore(g);
+  place(c.el, p.x, p.y); const bc=boxCenterYard(g); parkFork(bc.x,bc.y,'R'); await wait(moveMs()); if(!alive(id)){c.el.remove();c.el=null;return;}
+  await animateBalesIn(id,c); if(!alive(id))return;
+  updateStats(); await wait(50);
 }
 
 // ========== SEND TO BUFFER ==========
