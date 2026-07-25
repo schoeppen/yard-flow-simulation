@@ -84,8 +84,8 @@
   .carga{position:absolute;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;
     color:#fff;font-size:10px;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.25);box-shadow:0 1px 3px rgba(20,25,60,.18);
     transition:left var(--mv) cubic-bezier(.45,.05,.25,1), top var(--mv) cubic-bezier(.45,.05,.25,1), opacity .3s;}
-  .carga .pacas{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:2px;max-width:52px}
-  .carga .pacas i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.35);transition:background .2s, transform .2s}
+  .carga .pacas{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:2px;max-width:52px}
+  .carga .pacas i{width:7px;height:7px;border-radius:2px;background:rgba(255,255,255,.35);transition:background .2s, transform .2s}
   .carga .pacas i.on{background:rgba(255,255,255,.95);transform:scale(1.05)}
   .fly{position:absolute;border-radius:3px;box-shadow:0 1px 2px rgba(20,25,60,.3);border:1px solid rgba(0,0,0,.15);z-index:35;
     transition:left var(--mv) cubic-bezier(.45,.05,.25,1), top var(--mv) cubic-bezier(.45,.05,.25,1), opacity .25s;}
@@ -196,7 +196,7 @@ let qCW=760, qCH=150;
 const stage=document.getElementById('stage');
 let speedMult=1, running=true, seq=0, totalBales=0, initInPlay=0, paused_resolve=null;
 let toProdB=0, feedCount=[0,0,0];
-let qA=[], qB=[], beforeSeq=[], bIdx=0;
+let qA=[], qB=[], beforeSeq=[], bIdx=0, wavePhase=0;
 let mode='store', runId=0;
 const BASE_MOVE=560;
 let islaTop={}; ISLANDS.forEach((is,i)=>islaTop[is.id]=TOP+i*ISLA_PITCH);
@@ -427,7 +427,7 @@ function baseBefore(q){ return q===0?42:q===1?70:96; }       // no sorting → w
 function pushSeries(arr,base){ const last=arr.length?arr[arr.length-1]:base;   // ease from last value → new base for a smooth line
   for(let s=0;s<6;s++){ const target=base+(Math.random()*2-1); let v=last+(target-last)*((s+1)/6)+(Math.random()*1.2-0.6); arr.push(Math.max(2,Math.min(99,v))); }
   if(arr.length>Q_WINDOW) arr.splice(0,arr.length-Q_WINDOW); }
-function qReset(){ qA=[]; qB=[]; bIdx=0; drawQ(); }
+function qReset(){ qA=[]; qB=[]; bIdx=0; wavePhase=Math.random()*6; drawQ(); }
 function drawQ(){ const c=document.getElementById('qcanvas'); if(!c) return; const dpr=window.devicePixelRatio||1;
   const w=qCW,h=qCH; if(c.width!==w*dpr){ c.width=w*dpr; c.height=h*dpr; } const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
   const padL=36,padR=74,padT=26,padB=8, pW=w-padL-padR, pH=h-padT-padB;
@@ -462,7 +462,8 @@ async function consumeBuffer(id){
       fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
       toProdB++; feedCount[bl.q]++; feedMini('feed', bl.q);
       pushSeries(qA, baseAfter(bl.q));
-      const bbase = 70 + 26*Math.sin(bIdx*0.55); bIdx++;   // smooth continuous wave, under & over the target
+      wavePhase += 0.34 + Math.random()*0.55; bIdx++;   // irregular period → organic, inconsistent waves
+      const bbase = 70 + (20 + 9*Math.sin(wavePhase*0.41)) * Math.sin(wavePhase);   // amplitude also varies
       pushSeries(qB, bbase);
       const bq = bbase<58 ? 0 : bbase<78 ? 1 : 2; feedMini('feedB', bq); drawQ();
       updateStats(); await wait(70);
@@ -506,7 +507,7 @@ async function startMode(m){
   } else {
     genCargas(); prefillYardFull(); buffer=[];
     // long, balanced buffer (Safi/after stays stable ~80)
-    const specs=[{q:2,n:8,o:'A'},{q:0,n:8,o:'B'},{q:1,n:8,o:'C'},{q:2,n:8,o:'A'},{q:0,n:8,o:'B'}];
+    const specs=[{q:2,n:5,o:'A'},{q:0,n:5,o:'B'},{q:1,n:5,o:'C'},{q:2,n:5,o:'A'},{q:0,n:5,o:'B'}];
     specs.forEach((sp,n)=>{ seq++; const bl={id:seq,q:sp.q,color:QUAL[sp.q].c,n:sp.n,filled:sp.n,el:null,dots:[],origin:sp.o};
       makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y); refreshDots(bl); buffer.push(bl); });
     // "before Safi AI": deliberately INCONSISTENT input — blocks of bad / good / intermediate → line swings under and over the target
