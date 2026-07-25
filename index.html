@@ -505,11 +505,14 @@ async function startMode(m){
     for(const g of picks){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await sendLoadToBuffer(id,g); }
   } else {
     genCargas(); prefillYardFull(); buffer=[];
-    // longer, balanced buffer so consume runs long and the before-line sweeps low→high
-    const specs=[{q:2,n:7,o:'A'},{q:0,n:7,o:'B'},{q:1,n:6,o:'C'},{q:2,n:7,o:'A'},{q:0,n:5,o:'B'}];
+    // long, balanced buffer (Safi/after stays stable ~80)
+    const specs=[{q:2,n:8,o:'A'},{q:0,n:8,o:'B'},{q:1,n:8,o:'C'},{q:2,n:8,o:'A'},{q:0,n:8,o:'B'}];
     specs.forEach((sp,n)=>{ seq++; const bl={id:seq,q:sp.q,color:QUAL[sp.q].c,n:sp.n,filled:sp.n,el:null,dots:[],origin:sp.o};
       makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y); refreshDots(bl); buffer.push(bl); });
-    beforeSeq=[]; buffer.forEach(b=>{ for(let i=0;i<b.n;i++) beforeSeq.push(b.q); }); beforeSeq.sort((a,b)=>a-b); bIdx=0;   // "before": all bad first, then good → sweeps up to high
+    // "before Safi AI": deliberately INCONSISTENT input — blocks of bad / good / intermediate → line swings under and over the target
+    const totalB=buffer.reduce((a,b)=>a+b.n,0);
+    const pattern=[0,2,1,2,0,2,1]; const blk=6;   // 0=bad(low ~42) 2=good(high ~96) 1=intermediate(~70)
+    beforeSeq=[]; let pi=0; while(beforeSeq.length<totalB){ const q=pattern[pi%pattern.length]; for(let i=0;i<blk&&beforeSeq.length<totalB;i++) beforeSeq.push(q); pi++; } bIdx=0;
     initInPlay=balesInBuffer(); setPhase('consume'); qReset();
     place(fork(), bufPos(0).x-24, bufPos(0).y-12); updateStats();
     await consumeBuffer(id);
