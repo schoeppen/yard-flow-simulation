@@ -15,15 +15,15 @@
   body{font-family:'Figtree','Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);
     background:radial-gradient(1100px 560px at 18% -12%, #f8f9ff, transparent), radial-gradient(900px 460px at 102% -4%, #ecf7f6, transparent), var(--bg)}
   #app{display:flex;flex-direction:column;height:100vh}
-  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:11px 20px;color:#fff;
-    background:linear-gradient(118deg, var(--navy), var(--navy2));box-shadow:0 2px 16px rgba(10,12,30,.28);z-index:5}
-  .brandwrap{display:flex;align-items:center;gap:11px}
-  .hlogo{width:30px;height:30px;border-radius:9px;background:#fff;padding:3px;display:inline-flex;box-shadow:0 3px 10px rgba(0,0,0,.28)}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:7px 16px;color:#fff;
+    background:linear-gradient(118deg, var(--navy), var(--navy2));box-shadow:0 2px 14px rgba(10,12,30,.28);z-index:5}
+  .brandwrap{display:flex;align-items:center;gap:10px}
+  .hlogo{width:26px;height:26px;border-radius:8px;background:#fff;padding:3px;display:inline-flex;box-shadow:0 3px 10px rgba(0,0,0,.28)}
   .hlogo img{width:100%;height:100%;object-fit:contain}
-  header h1{font-size:15px;margin:0;font-weight:800;line-height:1.12;letter-spacing:.2px}
-  .hsub{font-size:11px;color:#a9aed0;font-weight:600;margin-top:2px}
+  header h1{font-size:13.5px;margin:0;font-weight:800;line-height:1.1;letter-spacing:.2px}
+  .hsub{font-size:10px;color:#a9aed0;font-weight:600;margin-top:1px}
   .controls{display:flex;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap}
-  button{font:inherit;font-size:13px;border:0;border-radius:11px;padding:8px 14px;cursor:pointer;font-weight:700;background:var(--purple);color:#fff;
+  button{font:inherit;font-size:12.5px;border:0;border-radius:10px;padding:6px 12px;cursor:pointer;font-weight:700;background:var(--purple);color:#fff;
     transition:transform .08s ease, box-shadow .15s, background .15s;box-shadow:0 4px 12px rgba(99,71,255,.38)}
   button:hover{transform:translateY(-1px)}
   button:active{transform:translateY(0)}
@@ -40,7 +40,7 @@
   input[type=range]{-webkit-appearance:none;appearance:none;width:130px;height:5px;border-radius:5px;background:rgba(255,255,255,.25);outline:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--teal);cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}
   input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radius:50%;background:var(--teal);cursor:pointer}
-  .stats{display:flex;gap:14px;padding:9px 20px;background:rgba(255,255,255,.72);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap;align-items:center}
+  .stats{display:flex;gap:14px;padding:5px 16px;background:rgba(255,255,255,.72);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap;align-items:center}
   .stat{color:var(--muted);font-weight:600} .stat b{color:var(--purple);font-weight:800}
   #phase{font-weight:800;padding:3px 12px;border-radius:20px;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
   .phase-store{background:#e8f7ff;color:#0f6ea8} .phase-buffer{background:#eef0ff;color:#4b3fd6} .phase-consume{background:#eafaf0;color:#1c7a4a}
@@ -64,9 +64,9 @@
   #stageWrap{flex:1;overflow:auto;position:relative}
   #stage{position:relative;transform-origin:top left}
   #factory{position:absolute;text-align:center}
-  #factory .ico{font-size:80px;line-height:1}
-  #factory .rec{font-size:36px;margin-top:-12px}
-  #factory .lbl{font-weight:700;color:var(--navy);font-size:14px;margin-top:2px}
+  #factory .ico{font-size:62px;line-height:1}
+  #factory .rec{font-size:28px;margin-top:-10px}
+  #factory .lbl{font-weight:800;color:var(--navy);font-size:12px;margin-top:2px}
   .feedwrap{position:absolute;font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.6px}
   .feed{display:flex;flex-wrap:nowrap;gap:3px;width:230px;height:20px;margin-top:6px;overflow:hidden}
   .fmini{width:18px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.3);flex:0 0 auto}
@@ -129,11 +129,6 @@
     </div>
   </header>
   <div class="stats">
-    <span id="phase" class="phase-store"></span>
-    <div class="stat"><span id="lblInplay">In play:</span> <b id="sInYard">0</b>/<span id="sCap">0</span> <span id="lblBales">bales</span></div>
-    <div class="stat"><span id="lblBuffer">Buffer:</span> <b id="sBufLoads">0</b>/<span id="sBufMax">5</span> <span id="lblLoads">loads</span></div>
-    <div class="stat"><span id="lblFed">Fed to production:</span> <b id="sToProd">0</b></div>
-    <div class="stat"><span id="lblFeedmix">Feed mix:</span> <b id="sMix">–</b></div>
     <div class="qlegend"><span id="lblQuality">Quality:</span> <span id="lblLow">Low</span> <span class="qbar"></span> <span id="lblHigh">High</span> <span id="lblGrey" style="color:#8b93a7">· grey = intermediate</span></div>
   </div>
   <div id="stageWrap"><div id="stage"></div></div>
@@ -190,8 +185,8 @@ const LOGO_SVG='<img alt="Safi" style="width:100%;height:100%;display:block;obje
 const ISLANDS=[{id:'A'},{id:'B'},{id:'C'}];
 const FILAS=3, SLOTS_PER_FILA=10, CAP=FILAS*SLOTS_PER_FILA, TOTAL=ISLANDS.length*CAP;
 const QUAL=[{k:'Low',c:'#e5484d'},{k:'Intermediate',c:'#8b93a7'},{k:'High',c:'#30a46c'}];
-const SLOT_W=70, SLOT_H=52, CARGA_W=58, CARGA_H=42, FLY=16;
-const YARD_X0=470, FILA_PITCH=62, TOP=160, ISLA_PITCH=FILAS*FILA_PITCH+78;
+const SLOT_W=70, SLOT_H=46, CARGA_W=58, CARGA_H=40, FLY=16;
+const YARD_X0=470, FILA_PITCH=54, TOP=138, ISLA_PITCH=FILAS*FILA_PITCH+58;
 const BUF_MAX=5;
 const Q_TARGET=80, Q_BAND=[77,83], Q_WINDOW=150;
 const Q_UNKNOWN='#39406a', Q_UNKNOWN_HATCH='repeating-linear-gradient(45deg,#434a78,#434a78 7px,#2f3457 7px,#2f3457 14px)';
@@ -520,13 +515,13 @@ async function startMode(m){
     await consumeBuffer(id);
   }
 }
-function setPhase(p){ const el=document.getElementById('phase'); const t=L();
+function setPhase(p){ const el=document.getElementById('phase'); if(!el) return; const t=L();
   if(p==='store'){ el.textContent=t.phaseStore; el.className='phase-store'; }
   else if(p==='buffer'){ el.textContent=t.phaseBuffer; el.className='phase-buffer'; }
   else { el.textContent=t.phaseConsume; el.className='phase-consume'; } }
-function updateStats(){
+function updateStats(){ const y=document.getElementById('sInYard'); if(!y) return;
   const t=L(); const inPlay = mode==='consume' ? balesInBuffer() : balesInYard();
-  document.getElementById('sInYard').textContent=inPlay; document.getElementById('sCap').textContent=initInPlay||0;
+  y.textContent=inPlay; document.getElementById('sCap').textContent=initInPlay||0;
   document.getElementById('sBufLoads').textContent=buffer.length;
   document.getElementById('sToProd').textContent=toProdB;
   const tot=feedCount[0]+feedCount[1]+feedCount[2];
@@ -549,12 +544,6 @@ function applyStatic(){
   document.getElementById('play').textContent=running?t.pause:t.play;
   document.getElementById('reset').textContent=t.reset;
   document.getElementById('lblSpeed').textContent=t.speed;
-  document.getElementById('lblInplay').textContent=t.inplay;
-  document.getElementById('lblBales').textContent=t.bales;
-  document.getElementById('lblBuffer').textContent=t.bufferLbl;
-  document.getElementById('lblLoads').textContent=t.loads;
-  document.getElementById('lblFed').textContent=t.fed;
-  document.getElementById('lblFeedmix').textContent=t.feedmix;
   document.getElementById('lblQuality').textContent=t.quality;
   document.getElementById('lblLow').textContent=t.low;
   document.getElementById('lblHigh').textContent=t.high;
@@ -573,7 +562,7 @@ document.getElementById('lang').onclick=()=>setLang(lang==='en'?'es':'en');
 document.getElementById('play').onclick=e=>{ running=!running; e.target.textContent=running?L().pause:L().play;
   if(running&&paused_resolve){paused_resolve();paused_resolve=null;} };
 document.getElementById('reset').onclick=()=>startMode(mode);
-document.getElementById('sBufMax').textContent=BUF_MAX;
+(()=>{ const e=document.getElementById('sBufMax'); if(e) e.textContent=BUF_MAX; })();
 document.getElementById('speed').oninput=e=>{ speedMult=parseFloat(e.target.value); document.getElementById('spd').textContent=speedMult.toFixed(1)+'×'; setMoveVars(); };
 
 // ---------- go ----------
