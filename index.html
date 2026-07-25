@@ -236,8 +236,7 @@ function fork(){ return document.getElementById('fork'); }
 function buildScene(){
   const t=L();
   stage.innerHTML='';
-  const graphY=TOP+ISLANDS.length*ISLA_PITCH+24;
-  const W=YARD_X0+SLOTS_PER_FILA*SLOT_W+230, H=graphY+210;
+  const W=YARD_X0+SLOTS_PER_FILA*SLOT_W+230, H=TOP+ISLANDS.length*ISLA_PITCH+30;
   stage.style.width=W+'px'; stage.style.height=H+'px';
   const midY=TOP+(ISLANDS.length*ISLA_PITCH)/2-30;
 
@@ -246,13 +245,13 @@ function buildScene(){
   fx.innerHTML=`<div class="ico">🏭</div><div class="rec">♻️</div><div class="lbl">${t.factory}</div>`;
   stage.appendChild(fx); FACT_INTAKE={x:110-CARGA_W/2, y:midY-30};
 
-  // bottom band: two feed strips + dual-line quality graph
-  const fwd=document.createElement('div'); fwd.className='feedwrap'; fwd.style.cssText=`left:24px;top:${graphY}px;width:250px`;
+  // consume view: feed strips beside the production symbol + graph overlapping Island A (no scroll needed)
+  const fwd=document.createElement('div'); fwd.className='feedwrap'; fwd.style.cssText=`left:24px;top:${midY-14}px;width:200px`;
   fwd.innerHTML=`${t.feedTitleA}<div class="feed" id="feed"></div>`; stage.appendChild(fwd);
-  const fwd2=document.createElement('div'); fwd2.className='feedwrap'; fwd2.style.cssText=`left:24px;top:${graphY+72}px;width:250px`;
+  const fwd2=document.createElement('div'); fwd2.className='feedwrap'; fwd2.style.cssText=`left:24px;top:${midY+40}px;width:200px`;
   fwd2.innerHTML=`${t.feedTitleB}<div class="feed" id="feedB"></div>`; stage.appendChild(fwd2);
-  const cardW=Math.min(W-320, 760); qCW=cardW-28; qCH=150;
-  const qc=document.createElement('div'); qc.className='qcard'; qc.id='qcard'; qc.style.cssText=`left:290px;top:${graphY-16}px;width:${cardW}px;display:none`;
+  const gx=YARD_X0-10, cardW=Math.min(W-gx-30, 720); qCW=cardW-28; qCH=148;
+  const qc=document.createElement('div'); qc.className='qcard'; qc.id='qcard'; qc.style.cssText=`left:${gx}px;top:${TOP-30}px;width:${cardW}px;display:none`;
   qc.innerHTML=`<div class="qt" id="qTitle"></div><div class="qs" id="qSub"></div>`+
     `<canvas id="qcanvas" width="${qCW}" height="${qCH}" style="width:${qCW}px;height:${qCH}px"></canvas>`;
   stage.appendChild(qc);
