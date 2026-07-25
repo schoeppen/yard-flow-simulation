@@ -5,55 +5,86 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Yard MP · Quality Picking Simulation</title>
 <style>
-  :root{ color-scheme:light; --navy:#1A1A2E; --purple:#6347FF; --teal:#38BAB9; --ink:#1A1A2E; --bg:#F4F5FA; --panel:#fff; --line:#e3e5ef;
-         --qlow:#e5484d; --qmid:#8b93a7; --qhigh:#30a46c; }
+  :root{ color-scheme:light;
+    --navy:#14142a; --navy2:#20223f; --purple:#6347FF; --teal:#38BAB9; --ink:#1c1f2e;
+    --bg:#eceef7; --panel:#fff; --line:#e5e7f0; --muted:#8b90a8;
+    --qlow:#e5484d; --qmid:#8b93a7; --qhigh:#2fa56a;
+    --r:16px; --sh:0 10px 28px rgba(20,25,60,.10); --sh2:0 2px 10px rgba(20,25,60,.07); }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
-  body{font-family:'Figtree',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  body{font-family:'Figtree','Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);
+    background:radial-gradient(1100px 560px at 18% -12%, #f8f9ff, transparent), radial-gradient(900px 460px at 102% -4%, #ecf7f6, transparent), var(--bg)}
   #app{display:flex;flex-direction:column;height:100vh}
-  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 14px;background:var(--navy);color:#fff}
-  header h1{font-size:14px;margin:0;font-weight:600;line-height:1.2}
-  header .sub{font-size:11px;opacity:.7;max-width:560px;line-height:1.2}
-  .controls{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
-  button{font:inherit;font-size:13px;border:0;border-radius:7px;padding:6px 11px;cursor:pointer;font-weight:600;background:var(--purple);color:#fff}
-  button.ghost{background:rgba(255,255,255,.12);color:#fff}
-  button:active{transform:translateY(1px)}
-  .modes{display:flex;background:rgba(255,255,255,.1);border-radius:10px;padding:3px;gap:2px}
-  .modes button{background:transparent;color:#c9cde6;padding:6px 11px}
-  .modes button.active{background:#fff;color:var(--navy)}
-  #lang{background:rgba(255,255,255,.12);color:#fff;padding:7px 12px}
-  .controls label{font-size:12px;opacity:.85;display:flex;align-items:center;gap:6px}
-  input[type=range]{width:130px}
-  .stats{display:flex;gap:12px;padding:5px 14px;background:var(--panel);border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap;align-items:center}
-  .stat b{color:var(--purple)}
-  #phase{font-weight:700;padding:3px 12px;border-radius:20px;font-size:12px}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:11px 20px;color:#fff;
+    background:linear-gradient(118deg, var(--navy), var(--navy2));box-shadow:0 2px 16px rgba(10,12,30,.28);z-index:5}
+  .brandwrap{display:flex;align-items:center;gap:11px}
+  .hlogo{width:30px;height:30px;border-radius:9px;background:#fff;padding:3px;display:inline-flex;box-shadow:0 3px 10px rgba(0,0,0,.28)}
+  .hlogo img{width:100%;height:100%;object-fit:contain}
+  header h1{font-size:15px;margin:0;font-weight:800;line-height:1.12;letter-spacing:.2px}
+  .hsub{font-size:11px;color:#a9aed0;font-weight:600;margin-top:2px}
+  .controls{display:flex;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap}
+  button{font:inherit;font-size:13px;border:0;border-radius:11px;padding:8px 14px;cursor:pointer;font-weight:700;background:var(--purple);color:#fff;
+    transition:transform .08s ease, box-shadow .15s, background .15s;box-shadow:0 4px 12px rgba(99,71,255,.38)}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  button.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+  button.ghost:hover{background:rgba(255,255,255,.2)}
+  .modes{display:flex;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:3px;gap:2px}
+  .modes button{background:transparent;color:#c5c9e6;padding:7px 14px;box-shadow:none;font-weight:700}
+  .modes button:hover{color:#fff;transform:none}
+  .modes button.active{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.22)}
+  #lang{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+  #lang:hover{background:rgba(255,255,255,.2)}
+  .controls label{font-size:12px;opacity:.9;display:flex;align-items:center;gap:7px;font-weight:600}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:130px;height:5px;border-radius:5px;background:rgba(255,255,255,.25);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--teal);cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radius:50%;background:var(--teal);cursor:pointer}
+  .stats{display:flex;gap:14px;padding:9px 20px;background:rgba(255,255,255,.72);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap;align-items:center}
+  .stat{color:var(--muted);font-weight:600} .stat b{color:var(--purple);font-weight:800}
+  #phase{font-weight:800;padding:3px 12px;border-radius:20px;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
   .phase-store{background:#e8f7ff;color:#0f6ea8} .phase-buffer{background:#eef0ff;color:#4b3fd6} .phase-consume{background:#eafaf0;color:#1c7a4a}
-  .qlegend{display:flex;align-items:center;gap:8px;font-size:12px;margin-left:auto}
-  .qbar{width:150px;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--qlow),var(--qmid),var(--qhigh))}
+  .qlegend{display:flex;align-items:center;gap:9px;font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-left:auto}
+  .qbar{width:150px;height:10px;border-radius:6px;background:linear-gradient(90deg,var(--qlow),var(--qmid),var(--qhigh));box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+  /* scan station + quality graph (ported) */
+  .scanzone{position:absolute;border:2px solid var(--teal);border-radius:14px;background:#1A1A2E;color:#fff;padding:8px 8px 10px;text-align:center;box-shadow:0 8px 22px rgba(99,71,255,.35);overflow:hidden;z-index:6}
+  .scanzone .sbrand{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.2px}
+  .scanzone .sbrand b{color:var(--teal)}
+  .scanzone .sbrand .lg{width:18px;height:18px;background:#fff;border-radius:5px;padding:2px;display:inline-flex}
+  .scanzone .sbrand .lg img{width:100%;height:100%;object-fit:contain}
+  .scanzone .sico{font-size:24px;line-height:1;margin-top:3px}
+  .scanzone .slabel{font-size:11px;color:#c9cde6;font-weight:700;margin-top:1px}
+  .scanzone .sweep{position:absolute;left:6px;right:6px;top:6px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,var(--teal),var(--purple),transparent);opacity:0;box-shadow:0 0 12px var(--teal)}
+  .scanzone.scanning .sweep{animation:scanSweep .6s ease-in-out}
+  @keyframes scanSweep{0%{top:6px;opacity:0}15%{opacity:1}85%{opacity:1}100%{top:calc(100% - 9px);opacity:0}}
+  #scanflash{position:absolute;border-radius:12px;background:radial-gradient(circle,rgba(56,186,185,.55),rgba(99,71,255,.35));opacity:0;transition:opacity .12s;pointer-events:none;z-index:36;box-shadow:0 0 20px rgba(56,186,185,.7)}
+  .qcard{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:14px 16px;z-index:7}
+  .qcard .qt{font-weight:800;font-size:15px;letter-spacing:.1px} .qcard .qs{font-size:11px;color:var(--muted);max-width:520px;line-height:1.3;margin-top:2px}
+  .qcard canvas{display:block;margin-top:6px}
   #stageWrap{flex:1;overflow:auto;position:relative}
   #stage{position:relative;transform-origin:top left}
   #factory{position:absolute;text-align:center}
   #factory .ico{font-size:80px;line-height:1}
   #factory .rec{font-size:36px;margin-top:-12px}
   #factory .lbl{font-weight:700;color:var(--navy);font-size:14px;margin-top:2px}
-  .feedwrap{position:absolute;font-size:11px;color:#6b7186;font-weight:700}
-  .feed{display:flex;flex-wrap:wrap;gap:3px;width:210px;margin-top:6px}
-  .fmini{width:13px;height:13px;border-radius:3px;border:1px solid rgba(0,0,0,.12)}
-  .bufzone{position:absolute;border:2px dashed var(--teal);border-radius:14px;background:rgba(56,186,185,.06)}
-  .bufzone .bt{position:absolute;top:-11px;left:14px;background:var(--bg);padding:0 8px;font-size:12px;font-weight:700;color:#1f8a89}
-  .truckzone{position:absolute;border:2px dashed #cfd4e6;border-radius:14px;color:#8890b5;font-size:12px;padding:8px 10px;font-weight:600}
+  .feedwrap{position:absolute;font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.6px}
+  .feed{display:flex;flex-wrap:nowrap;gap:3px;width:230px;height:20px;margin-top:6px;overflow:hidden}
+  .fmini{width:18px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.3);flex:0 0 auto}
+  .bufzone{position:absolute;border:1.5px dashed var(--teal);border-radius:var(--r);background:rgba(56,186,185,.07)}
+  .bufzone .bt{position:absolute;top:-10px;left:14px;background:var(--bg);padding:0 8px;font-size:10px;font-weight:800;color:#1f8a89;text-transform:uppercase;letter-spacing:.6px}
+  .truckzone{position:absolute;border:1.5px dashed #cfd4e6;border-radius:var(--r);color:var(--muted);font-size:11px;padding:8px 10px;font-weight:700}
   .arrow{position:absolute;color:#8890b5;font-size:12px}
   .arrow .line{height:2px;background:#c3c8de;position:relative;margin-top:6px;width:150px}
   .arrow .line.l:after{content:'';position:absolute;left:-1px;top:-4px;border:5px solid transparent;border-right-color:#c3c8de}
-  .island-label{position:absolute;font-weight:700;color:var(--purple);font-size:15px}
-  .fila-label{position:absolute;font-size:11px;color:#8890b5}
-  .slot{position:absolute;border:1px dashed #d3d7e6;border-radius:8px}
+  .island-label{position:absolute;font-weight:800;color:var(--purple);font-size:15px;letter-spacing:.3px}
+  .fila-label{position:absolute;font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.4px}
+  .slot{position:absolute;border:1px dashed #d7dbe8;border-radius:8px;background:rgba(255,255,255,.4)}
   .bslot{position:absolute;border:1px dashed #9bd8d7;border-radius:8px}
   .qtitle{position:absolute;font-size:12px;color:#6b7186}
   .carga{position:absolute;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;
     color:#fff;font-size:10px;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.25);box-shadow:0 1px 3px rgba(20,25,60,.18);
     transition:left var(--mv) cubic-bezier(.45,.05,.25,1), top var(--mv) cubic-bezier(.45,.05,.25,1), opacity .3s;}
-  .carga .pacas{display:flex;gap:3px;margin-top:3px}
+  .carga .pacas{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:2px;max-width:52px}
   .carga .pacas i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.35);transition:background .2s, transform .2s}
   .carga .pacas i.on{background:rgba(255,255,255,.95);transform:scale(1.05)}
   .fly{position:absolute;border-radius:3px;box-shadow:0 1px 2px rgba(20,25,60,.3);border:1px solid rgba(0,0,0,.15);z-index:35;
@@ -83,10 +114,7 @@
 <body>
 <div id="app">
   <header>
-    <div>
-      <h1 id="hTitle">Yard MP — Quality Picking Simulation</h1>
-      <div class="sub" id="sub"></div>
-    </div>
+    <div class="brandwrap"><span class="hlogo" id="hLogo"></span><div><h1 id="hTitle">Yard MP</h1><div class="hsub" id="sub"></div></div></div>
     <div class="controls">
       <div class="modes">
         <button id="mStore" class="active"></button>
@@ -128,7 +156,11 @@ const T={
     bufferZone:'Buffer (~5 loads)', stagedMix:'Staged MIX of qualities',
     reception:'Reception · Truck', unload:'Unload bale by bale →<br>ISLAND A→B→C, row by row',
     island:'ISLAND', row:'R', load:'Load', isla:'Island', green:'green', grey:'grey', red:'red', slot:'Slot',
-    dTitle:'Safi AI · Driver', dStore:'STORE LOAD', dPick:'PICK LOAD', dConsume:'PICK BALE', dFrom:'From', dTo:'To', dTruck:'Truck', pos:'pos', dIdle:'Waiting…' },
+    dTitle:'Safi AI · Driver', dStore:'STORE LOAD', dPick:'PICK LOAD', dConsume:'PICK BALE', dFrom:'From', dTo:'To', dTruck:'Truck', pos:'pos', dIdle:'Waiting…',
+    subtitle:'MP bale flow · scan · sort · consume', scanZone:'Scan bale', dScan:'SCAN · Safi AI', dScanning:'Scanning bale…', dMaterial:'Material', qn:['Low','Intermediate','High'],
+    feedTitleB:'Feed to production · before Safi AI →', feedTitleA:'Feed to production · with Safi AI →',
+    qTitle:'Processed quality over time', qSub:'Rolling quality per bale fed to production · target 80%',
+    qTargetLbl:'target 80%', qLegA:'With Safi AI · moving average (last 5 bales)', qLegB:'Before Safi AI · moving average (last 5 bales)' },
   es:{ title:'Patio MP — Simulación de selección por calidad',
     store:'📦 Almacenar', buffer:'📥 Enviar al búfer', consume:'♻️ Consumir',
     pause:'⏸ Pausar', play:'▶ Reproducir', reset:'↺ Reiniciar', speed:'Velocidad', langBtn:'EN',
@@ -144,7 +176,11 @@ const T={
     bufferZone:'Búfer (~5 cargas)', stagedMix:'MEZCLA de calidades preparada',
     reception:'Recepción · Camión', unload:'Descarga paca por paca →<br>ISLA A→B→C, fila por fila',
     island:'ISLA', row:'F', load:'Carga', isla:'Isla', green:'verde', grey:'gris', red:'rojo', slot:'Puesto',
-    dTitle:'Safi AI · Operador', dStore:'ALMACENAR', dPick:'RECOGER CARGA', dConsume:'RECOGER PACA', dFrom:'Desde', dTo:'Hacia', dTruck:'Camión', pos:'pos', dIdle:'Esperando…' }
+    dTitle:'Safi AI · Operador', dStore:'ALMACENAR', dPick:'RECOGER CARGA', dConsume:'RECOGER PACA', dFrom:'Desde', dTo:'Hacia', dTruck:'Camión', pos:'pos', dIdle:'Esperando…',
+    subtitle:'Flujo de pacas MP · escaneo · clasificación · consumo', scanZone:'Escanear paca', dScan:'ESCANEO · Safi AI', dScanning:'Escaneando paca…', dMaterial:'Material', qn:['Baja','Intermedia','Alta'],
+    feedTitleB:'Alimentación · antes de Safi AI →', feedTitleA:'Alimentación · con Safi AI →',
+    qTitle:'Calidad procesada en el tiempo', qSub:'Calidad por paca hacia producción · objetivo 80%',
+    qTargetLbl:'objetivo 80%', qLegA:'Con Safi AI · media móvil (últimas 5 pacas)', qLegB:'Antes de Safi AI · media móvil (últimas 5 pacas)' }
 };
 let lang='en';
 function L(){ return T[lang]; }
@@ -157,11 +193,15 @@ const QUAL=[{k:'Low',c:'#e5484d'},{k:'Intermediate',c:'#8b93a7'},{k:'High',c:'#3
 const SLOT_W=70, SLOT_H=52, CARGA_W=58, CARGA_H=42, FLY=16;
 const YARD_X0=470, FILA_PITCH=62, TOP=160, ISLA_PITCH=FILAS*FILA_PITCH+78;
 const BUF_MAX=5;
-let TRUCK_BED={}, FACT_INTAKE={}, BUF_X=250, BUF_Y0=0, BUF_PITCH=CARGA_H+14;
+const Q_TARGET=80, Q_BAND=[77,83], Q_WINDOW=150;
+const Q_UNKNOWN='#39406a', Q_UNKNOWN_HATCH='repeating-linear-gradient(45deg,#434a78,#434a78 7px,#2f3457 7px,#2f3457 14px)';
+let TRUCK_BED={}, FACT_INTAKE={}, SCAN={}, BUF_X=250, BUF_Y0=0, BUF_PITCH=CARGA_H+14;
+let qCW=760, qCH=150;
 
 const stage=document.getElementById('stage');
 let speedMult=1, running=true, seq=0, totalBales=0, initInPlay=0, paused_resolve=null;
 let toProdB=0, feedCount=[0,0,0];
+let qA=[], qB=[], beforeSeq=[], bIdx=0;
 let mode='store', runId=0;
 const BASE_MOVE=560;
 let islaTop={}; ISLANDS.forEach((is,i)=>islaTop[is.id]=TOP+i*ISLA_PITCH);
@@ -176,8 +216,8 @@ const FORK_SVG='<svg id="fork" width="54" height="40" viewBox="0 0 54 40" xmlns=
   '<circle cx="29" cy="32" r="2" fill="#888"/><circle cx="43" cy="32" r="2" fill="#888"/></svg>';
 const TRUCK_SVG='<svg id="truck" width="120" height="66" viewBox="0 0 120 66" xmlns="http://www.w3.org/2000/svg">'+
   '<rect x="34" y="8" width="74" height="38" rx="3" fill="#c7ccdb"/><rect x="34" y="8" width="74" height="38" rx="3" fill="none" stroke="#9aa1bb"/>'+
-  '<rect x="41" y="14" width="26" height="12" rx="2" fill="#e5484d"/><rect x="70" y="14" width="26" height="12" rx="2" fill="#30a46c"/>'+
-  '<rect x="41" y="30" width="26" height="12" rx="2" fill="#8b93a7"/><rect x="70" y="30" width="26" height="12" rx="2" fill="#30a46c"/>'+
+  '<rect x="41" y="14" width="55" height="28" rx="3" fill="#39406a"/>'+
+  '<text x="68" y="34" font-size="20" font-weight="800" fill="#c9cde6" text-anchor="middle">?</text>'+
   '<path d="M6 22 h28 v24 h-28 a3 3 0 0 1 -3 -3 v-14 a7 7 0 0 1 3 -7 z" fill="#2d9bf0"/>'+
   '<rect x="8" y="26" width="16" height="11" rx="2" fill="#bfe3ff"/>'+
   '<circle cx="20" cy="52" r="8" fill="#222"/><circle cx="52" cy="52" r="8" fill="#222"/><circle cx="90" cy="52" r="8" fill="#222"/>'+
@@ -201,7 +241,8 @@ function fork(){ return document.getElementById('fork'); }
 function buildScene(){
   const t=L();
   stage.innerHTML='';
-  const W=YARD_X0+SLOTS_PER_FILA*SLOT_W+230, H=TOP+ISLANDS.length*ISLA_PITCH+20;
+  const graphY=TOP+ISLANDS.length*ISLA_PITCH+24;
+  const W=YARD_X0+SLOTS_PER_FILA*SLOT_W+230, H=graphY+210;
   stage.style.width=W+'px'; stage.style.height=H+'px';
   const midY=TOP+(ISLANDS.length*ISLA_PITCH)/2-30;
 
@@ -210,9 +251,16 @@ function buildScene(){
   fx.innerHTML=`<div class="ico">🏭</div><div class="rec">♻️</div><div class="lbl">${t.factory}</div>`;
   stage.appendChild(fx); FACT_INTAKE={x:110-CARGA_W/2, y:midY-30};
 
-  const fwd=document.createElement('div'); fwd.className='feedwrap';
-  fwd.style.cssText=`left:20px;top:${midY+70}px;width:210px`;
-  fwd.innerHTML=`${t.feedTitle}<div class="feed" id="feed"></div>`; stage.appendChild(fwd);
+  // bottom band: two feed strips + dual-line quality graph
+  const fwd=document.createElement('div'); fwd.className='feedwrap'; fwd.style.cssText=`left:24px;top:${graphY}px;width:250px`;
+  fwd.innerHTML=`${t.feedTitleA}<div class="feed" id="feed"></div>`; stage.appendChild(fwd);
+  const fwd2=document.createElement('div'); fwd2.className='feedwrap'; fwd2.style.cssText=`left:24px;top:${graphY+72}px;width:250px`;
+  fwd2.innerHTML=`${t.feedTitleB}<div class="feed" id="feedB"></div>`; stage.appendChild(fwd2);
+  const cardW=Math.min(W-320, 760); qCW=cardW-28; qCH=150;
+  const qc=document.createElement('div'); qc.className='qcard'; qc.id='qcard'; qc.style.cssText=`left:290px;top:${graphY-16}px;width:${cardW}px;display:none`;
+  qc.innerHTML=`<div class="qt" id="qTitle"></div><div class="qs" id="qSub"></div>`+
+    `<canvas id="qcanvas" width="${qCW}" height="${qCH}" style="width:${qCW}px;height:${qCH}px"></canvas>`;
+  stage.appendChild(qc);
 
   const bufH=BUF_MAX*BUF_PITCH+24; BUF_Y0=midY-bufH/2+22;
   const bz=document.createElement('div'); bz.className='bufzone';
@@ -236,9 +284,13 @@ function buildScene(){
   tz.textContent=t.reception; stage.appendChild(tz);
   const tw=document.createElement('div'); tw.innerHTML=TRUCK_SVG; stage.appendChild(tw.firstChild);
   place(document.getElementById('truck'), truckX, TOP-6); TRUCK_BED={x:truckX+28, y:TOP+10};
-  const dz=document.createElement('div'); dz.className='legend';
-  dz.style.cssText=`left:${truckX-14}px;top:${TOP+118}px`;
-  dz.innerHTML=t.unload; stage.appendChild(dz);
+  // Safi AI scan station (below reception)
+  const scz=document.createElement('div'); scz.className='scanzone'; scz.id='scanzone';
+  scz.style.cssText=`left:${truckX-14}px;top:${TOP+120}px;width:170px;height:88px`;
+  scz.innerHTML=`<div class="sbrand"><span class="lg">${LOGO_SVG}</span>Safi <b>AI</b></div><div class="sico">📱</div><div class="slabel">${t.scanZone}</div><div class="sweep"></div>`;
+  stage.appendChild(scz);
+  SCAN={x:truckX+40, y:TOP+164};
+  const flash=document.createElement('div'); flash.id='scanflash'; flash.style.cssText=`left:${SCAN.x-32}px;top:${SCAN.y-26}px;width:64px;height:52px`; stage.appendChild(flash);
 
   ISLANDS.forEach(is=>{
     const y0=islaTop[is.id];
@@ -266,6 +318,10 @@ function locLabel(g){ const t=L(); const isla=ISLANDS[Math.floor(g/CAP)].id; con
 function chipHTML(color,n){ let p=''; for(let i=0;i<n;i++)p+='<i></i>';
   return `<div class="chipbox" style="background:${color};width:54px;height:40px"><div class="pac">${p}</div></div>`; }
 function baleChipHTML(color){ return `<div class="chipbox" style="background:${color};width:32px;height:32px"></div>`; }
+function chipUnknownHTML(){ return `<div class="chipbox" style="background:${Q_UNKNOWN};width:54px;height:40px;font-size:18px">?</div>`; }
+function driverScan(){ const t=L(); setDriverBody(`<div class="task">${t.dScan}</div><div class="chip">${chipUnknownHTML()}<div class="big">📱 ${t.dScanning}</div></div>`); }
+function driverMaterial(c){ const t=L(); setDriverBody(`<div class="task">${t.dScan}</div><div class="chip">${chipHTML(c.color,c.n)}<div class="big">${t.dMaterial}: ${t.qn[c.q]}</div></div>`); }
+async function flashScan(){ const z=document.getElementById('scanzone'); if(z){ z.classList.remove('scanning'); void z.offsetWidth; z.classList.add('scanning'); } const f=document.getElementById('scanflash'); if(!f) return; f.style.opacity='1'; await wait(moveMs()*0.4); f.style.opacity='0'; }
 function setDriverBody(h){ const b=document.getElementById('driverBody'); if(b) b.innerHTML=h; }
 function driverIdle(){ const t=L(); setDriverBody(`<div class="task" style="background:#3a3c5c">${t.dIdle}</div>`); }
 function driverStore(g){ const t=L(); const c=cargas[g];
@@ -295,16 +351,18 @@ function parkFork(cx,cy,side){ const f=fork();
   else { f.style.transform='scaleX(-1)'; place(f, cx-14-FORK_W, cy-FORK_H/2); } }
 async function moveForkTo(cx,cy,side){ parkFork(cx,cy,side); await wait(moveMs()); }
 
-function makeLoadEl(c){
-  const t=L();
-  const el=document.createElement('div'); el.className='carga';
-  el.style.width=CARGA_W+'px'; el.style.height=CARGA_H+'px'; el.style.background=c.color; el.style.setProperty('--mv',moveMs()+'ms');
+function renderCargaKnown(c){ const t=L(); c.el.style.background=c.color;
   let dots=''; for(let i=0;i<c.n;i++) dots+='<i></i>';
   const title = c.origin ? `${t.isla} ${c.origin} · C${c.id}` : `${t.load} ${c.id}`;
-  el.innerHTML=`<div>${title}</div><div class="pacas">${dots}</div>`;
-  stage.appendChild(el); c.el=el; c.dots=[...el.querySelectorAll('.pacas i')]; return el;
+  c.el.innerHTML=`<div>${title}</div><div class="pacas">${dots}</div>`; c.dots=[...c.el.querySelectorAll('.pacas i')]; refreshDots(c); }
+function renderCargaUnknown(c){ c.el.style.background=Q_UNKNOWN_HATCH; c.el.innerHTML='<div style="font-size:17px;font-weight:800">?</div>'; c.dots=[]; }
+function makeLoadEl(c){
+  const el=document.createElement('div'); el.className='carga';
+  el.style.width=CARGA_W+'px'; el.style.height=CARGA_H+'px'; el.style.setProperty('--mv',moveMs()+'ms');
+  stage.appendChild(el); c.el=el; renderCargaKnown(c); return el;
 }
-function refreshDots(c){ c.dots.forEach((d,i)=>d.classList.toggle('on', i<c.filled)); }
+function refreshDots(c){ if(c.dots) c.dots.forEach((d,i)=>d.classList.toggle('on', i<c.filled)); }
+async function animateBalesIn(id,c){ if(!c.dots) return; for(let k=0;k<c.n;k++){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; c.filled=k+1; refreshDots(c); await wait(90); } }
 function makeFly(color){ const el=document.createElement('div'); el.className='fly';
   el.style.width=FLY+'px'; el.style.height=FLY+'px'; el.style.background=color; el.style.setProperty('--mv',moveMs()+'ms');
   stage.appendChild(el); return el; }
@@ -329,19 +387,24 @@ function selectIslandRR(){
   return picks;
 }
 
-// ========== STORING ==========
+// ========== STORING (full load: pick unknown → scan → store, same as Alen) ==========
 async function storeLoad(id,g){
-  const c=cargas[g]; makeLoadEl(c); const p=posFor(g);
-  placeInstant(c.el,p.x,p.y); c.el.style.opacity='.4'; refreshDots(c);
-  const ctr=centerOf(g);
-  for(let k=0;k<c.n;k++){
-    if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
-    const fly=makeFly(c.color); place(fly,TRUCK_BED.x,TRUCK_BED.y); fly.style.opacity='0'; requestAnimationFrame(()=>fly.style.opacity='1');
-    await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){fly.remove();return;}
-    const bc=boxCenterYard(g); place(fly,ctr.x,ctr.y); parkFork(bc.x,bc.y,'R'); await wait(moveMs()); if(!alive(id)){fly.remove();return;}
-    fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
-    c.filled++; c.el.style.opacity='1'; refreshDots(c); updateStats(); await wait(90);
-  }
+  const c=cargas[g]; const p=posFor(g);
+  // load arrives at the truck as a whole, UNKNOWN
+  makeLoadEl(c); renderCargaUnknown(c); c.filled=0;
+  placeInstant(c.el, TRUCK_BED.x-CARGA_W/2, TRUCK_BED.y-CARGA_H/2); c.el.style.opacity='0'; requestAnimationFrame(()=>c.el.style.opacity='1');
+  driverScan();
+  await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){c.el.remove();c.el=null;return;}
+  // carry the whole load to the Safi AI scan station
+  place(c.el, SCAN.x-CARGA_W/2, SCAN.y-CARGA_H/2); await moveForkTo(SCAN.x,SCAN.y,'L'); if(!alive(id)){c.el.remove();c.el=null;return;}
+  await wait(moveMs()*0.5); await flashScan();
+  renderCargaKnown(c); driverMaterial(c);                 // material revealed
+  await wait(moveMs()*0.6); if(!alive(id)){c.el.remove();c.el=null;return;}
+  // carry the whole load to its island slot, then bales settle in
+  driverStore(g);
+  place(c.el, p.x, p.y); const bc=boxCenterYard(g); parkFork(bc.x,bc.y,'R'); await wait(moveMs()); if(!alive(id)){c.el.remove();c.el=null;return;}
+  await animateBalesIn(id,c); if(!alive(id))return;
+  updateStats(); await wait(50);
 }
 
 // ========== SEND TO BUFFER ==========
@@ -364,12 +427,33 @@ async function sendLoadToBuffer(id,g){
 }
 
 // ========== CONSUME ==========
-function pushFeed(q){
-  const f=document.getElementById('feed'); if(!f) return;
-  const s=document.createElement('span'); s.className='fmini'; s.style.background=QUAL[q].c; f.appendChild(s);
-  while(f.children.length>48) f.removeChild(f.firstChild);
-  feedCount[q]++;
-}
+function feedMini(id,q){ const f=document.getElementById(id); if(!f) return; const s=document.createElement('span'); s.className='fmini'; s.style.background=QUAL[q].c; f.appendChild(s); while(f.children.length>11) f.removeChild(f.firstChild); }
+function baseAfter(q){ return q===0?78:q===1?80:83; }        // Safi sorted blend → stable ~80
+function baseBefore(q){ return q===0?42:q===1?70:96; }       // no sorting → whole bad load then good → big swings
+function pushSeries(arr,base){ const last=arr.length?arr[arr.length-1]:base;   // ease from last value → new base for a smooth line
+  for(let s=0;s<6;s++){ const target=base+(Math.random()*2-1); let v=last+(target-last)*((s+1)/6)+(Math.random()*1.2-0.6); arr.push(Math.max(2,Math.min(99,v))); }
+  if(arr.length>Q_WINDOW) arr.splice(0,arr.length-Q_WINDOW); }
+function qReset(){ qA=[]; qB=[]; bIdx=0; drawQ(); }
+function drawQ(){ const c=document.getElementById('qcanvas'); if(!c) return; const dpr=window.devicePixelRatio||1;
+  const w=qCW,h=qCH; if(c.width!==w*dpr){ c.width=w*dpr; c.height=h*dpr; } const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  const padL=36,padR=74,padT=26,padB=8, pW=w-padL-padR, pH=h-padT-padB;
+  const all=qA.concat(qB); let mn=70,mx=90; if(all.length){ mn=Math.min(Q_TARGET,...all); mx=Math.max(Q_TARGET,...all); }
+  mn=Math.max(0,Math.floor((mn-4)/5)*5); mx=Math.min(100,Math.ceil((mx+4)/5)*5); if(mx-mn<10) mx=Math.min(100,mn+10);
+  const yFor=v=>padT+(1-(v-mn)/(mx-mn))*pH;
+  ctx.font='11px Figtree,system-ui,sans-serif';
+  [mx,Math.round((mn+mx)/2),mn].forEach(v=>{ const y=yFor(v); ctx.strokeStyle='#eceef5'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+pW,y); ctx.stroke(); ctx.fillStyle='#aab0c4'; ctx.fillText(v+'%',6,y+4); });
+  ctx.fillStyle='rgba(99,71,255,.09)'; ctx.fillRect(padL,yFor(Q_BAND[1]),pW,yFor(Q_BAND[0])-yFor(Q_BAND[1]));
+  ctx.strokeStyle='#20233a'; ctx.setLineDash([6,5]); ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(padL,yFor(Q_TARGET)); ctx.lineTo(padL+pW,yFor(Q_TARGET)); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#20233a'; ctx.font='700 11px Figtree,system-ui,sans-serif'; ctx.fillText(L().qTargetLbl, padL+pW+6, yFor(Q_TARGET)+4);
+  const dx=pW/(Q_WINDOW-1);
+  const plot=(arr,color)=>{ const n=arr.length; if(n<2) return; ctx.strokeStyle=color; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.beginPath(); for(let i=0;i<n;i++){ const x=padL+i*dx, y=yFor(arr[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke(); ctx.fillStyle=color; ctx.beginPath(); ctx.arc(padL+(n-1)*dx,yFor(arr[n-1]),3.4,0,7); ctx.fill(); };
+  plot(qB,'#e5484d'); plot(qA,'#3f3ff0');
+  const t=L(); ctx.textBaseline='middle'; ctx.font='700 12px Figtree,system-ui,sans-serif';
+  ctx.strokeStyle='#3f3ff0'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(padL,12); ctx.lineTo(padL+22,12); ctx.stroke();
+  ctx.fillStyle='#20233a'; ctx.fillText(t.qLegA, padL+28, 13);
+  const x2=padL+28+ctx.measureText(t.qLegA).width+22;
+  ctx.strokeStyle='#e5484d'; ctx.beginPath(); ctx.moveTo(x2,12); ctx.lineTo(x2+22,12); ctx.stroke();
+  ctx.fillText(t.qLegB, x2+28, 13); ctx.textBaseline='alphabetic'; }
 async function consumeBuffer(id){
   while(buffer.some(b=>b.filled>0)){
     for(let i=0;i<buffer.length;i++){
@@ -382,7 +466,11 @@ async function consumeBuffer(id){
       const fc=factCenter(); place(fly,fc.x,fc.y); parkFork(FACT_INTAKE.x+CARGA_W/2,FACT_INTAKE.y+CARGA_H/2,'L');
       await wait(moveMs()); if(!alive(id)){fly.remove();return;}
       fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
-      toProdB++; pushFeed(bl.q); updateStats(); await wait(70);
+      toProdB++; feedCount[bl.q]++; feedMini('feed', bl.q);
+      pushSeries(qA, baseAfter(bl.q));
+      const bq = beforeSeq.length ? beforeSeq[Math.min(bIdx,beforeSeq.length-1)] : bl.q; bIdx++;
+      pushSeries(qB, baseBefore(bq)); feedMini('feedB', bq); drawQ();
+      updateStats(); await wait(70);
     }
     const gone=buffer.filter(b=>b.filled<=0);
     gone.forEach(b=>{ b.el.style.opacity='0'; setTimeout(()=>b.el&&b.el.remove(),250); });
@@ -397,6 +485,7 @@ function clearAll(){
   buffer.forEach(b=>b.el&&b.el.remove()); cargas.forEach(c=>c.el&&c.el.remove());
   cargas=[]; buffer=[]; toProdB=0; feedCount=[0,0,0];
   const f=document.getElementById('feed'); if(f) f.innerHTML='';
+  const fb=document.getElementById('feedB'); if(fb) fb.innerHTML='';
 }
 function prefillYardFull(){ cargas.forEach((c,g)=>{ makeLoadEl(c); const p=posFor(g); placeInstant(c.el,p.x,p.y); c.filled=c.n; refreshDots(c); }); }
 
@@ -407,23 +496,26 @@ async function startMode(m){
   ['mStore','mBuffer','mConsume'].forEach(x=>document.getElementById(x).classList.remove('active'));
   document.getElementById(m==='store'?'mStore':m==='buffer'?'mBuffer':'mConsume').classList.add('active');
   await Promise.resolve(); clearAll();
-  const dp=document.getElementById('driver'); if(dp) dp.style.display=(m==='store')?'none':'block';
+  const dp=document.getElementById('driver'); if(dp) dp.style.display='block';
+  const qc=document.getElementById('qcard'); if(qc) qc.style.display=(m==='consume')?'block':'none';
+  if(m==='consume') requestAnimationFrame(qReset); else qReset();
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y);
 
   if(m==='store'){
-    genCargas(); initInPlay=totalBales; setPhase('store'); document.getElementById('sub').textContent=L().subStore; updateStats();
+    genCargas(); initInPlay=totalBales; setPhase('store'); updateStats();
     for(let g=0; g<TOTAL; g++){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await storeLoad(id,g); }
   } else if(m==='buffer'){
-    genCargas(); prefillYardFull(); initInPlay=totalBales; setPhase('buffer'); document.getElementById('sub').textContent=L().subBuffer; updateStats();
+    genCargas(); prefillYardFull(); initInPlay=totalBales; setPhase('buffer'); updateStats();
     const picks=selectIslandRR();
     for(const g of picks){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await sendLoadToBuffer(id,g); }
   } else {
-    genCargas(); prefillYardFull();
-    const picks=selectIslandRR(); buffer=[];
-    picks.forEach((g,n)=>{ const yc=cargas[g]; if(yc.el){ yc.el.remove(); yc.el=null; } yc.filled=0;
-      const bl={id:yc.id,q:yc.q,color:yc.color,n:yc.n,filled:yc.n,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id};
+    genCargas(); prefillYardFull(); buffer=[];
+    // longer, balanced buffer so consume runs long and the before-line sweeps low→high
+    const specs=[{q:2,n:7,o:'A'},{q:0,n:7,o:'B'},{q:1,n:6,o:'C'},{q:2,n:7,o:'A'},{q:0,n:5,o:'B'}];
+    specs.forEach((sp,n)=>{ seq++; const bl={id:seq,q:sp.q,color:QUAL[sp.q].c,n:sp.n,filled:sp.n,el:null,dots:[],origin:sp.o};
       makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y); refreshDots(bl); buffer.push(bl); });
-    initInPlay=balesInBuffer(); setPhase('consume'); document.getElementById('sub').textContent=L().subConsume;
+    beforeSeq=[]; buffer.forEach(b=>{ for(let i=0;i<b.n;i++) beforeSeq.push(b.q); }); beforeSeq.sort((a,b)=>a-b); bIdx=0;   // "before": all bad first, then good → sweeps up to high
+    initInPlay=balesInBuffer(); setPhase('consume'); qReset();
     place(fork(), bufPos(0).x-24, bufPos(0).y-12); updateStats();
     await consumeBuffer(id);
   }
@@ -446,6 +538,10 @@ function applyStatic(){
   const t=L();
   document.documentElement.lang=lang;
   document.getElementById('hTitle').textContent=t.title; document.title=t.title;
+  const hs=document.getElementById('sub'); if(hs) hs.textContent=t.subtitle||'';
+  const hl=document.getElementById('hLogo'); if(hl && !hl.dataset.set){ hl.innerHTML=LOGO_SVG; hl.dataset.set='1'; }
+  const qtl=document.getElementById('qTitle'); if(qtl){ qtl.textContent=t.qTitle; const qs=document.getElementById('qSub'); if(qs) qs.textContent=t.qSub; }
+  drawQ();
   document.getElementById('mStore').textContent=t.store;
   document.getElementById('mBuffer').textContent=t.buffer;
   document.getElementById('mConsume').textContent=t.consume;
