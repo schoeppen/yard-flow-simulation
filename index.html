@@ -463,8 +463,9 @@ async function consumeBuffer(id){
       fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
       toProdB++; feedCount[bl.q]++; feedMini('feed', bl.q);
       pushSeries(qA, baseAfter(bl.q));
-      const bq = beforeSeq.length ? beforeSeq[Math.min(bIdx,beforeSeq.length-1)] : bl.q; bIdx++;
-      pushSeries(qB, baseBefore(bq)); feedMini('feedB', bq); drawQ();
+      const bbase = 70 + 26*Math.sin(bIdx*0.55); bIdx++;   // smooth continuous wave, under & over the target
+      pushSeries(qB, bbase);
+      const bq = bbase<58 ? 0 : bbase<78 ? 1 : 2; feedMini('feedB', bq); drawQ();
       updateStats(); await wait(70);
     }
     const gone=buffer.filter(b=>b.filled<=0);
