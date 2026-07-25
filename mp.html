@@ -84,7 +84,7 @@
   .carga{position:absolute;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;
     color:#fff;font-size:10px;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.25);box-shadow:0 1px 3px rgba(20,25,60,.18);
     transition:left var(--mv) cubic-bezier(.45,.05,.25,1), top var(--mv) cubic-bezier(.45,.05,.25,1), opacity .3s;}
-  .carga .pacas{display:flex;gap:3px;margin-top:3px}
+  .carga .pacas{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:2px;max-width:52px}
   .carga .pacas i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.35);transition:background .2s, transform .2s}
   .carga .pacas i.on{background:rgba(255,255,255,.95);transform:scale(1.05)}
   .fly{position:absolute;border-radius:3px;box-shadow:0 1px 2px rgba(20,25,60,.3);border:1px solid rgba(0,0,0,.15);z-index:35;
@@ -193,7 +193,7 @@ const QUAL=[{k:'Low',c:'#e5484d'},{k:'Intermediate',c:'#8b93a7'},{k:'High',c:'#3
 const SLOT_W=70, SLOT_H=52, CARGA_W=58, CARGA_H=42, FLY=16;
 const YARD_X0=470, FILA_PITCH=62, TOP=160, ISLA_PITCH=FILAS*FILA_PITCH+78;
 const BUF_MAX=5;
-const Q_TARGET=80, Q_BAND=[77,83], Q_WINDOW=100;
+const Q_TARGET=80, Q_BAND=[77,83], Q_WINDOW=150;
 const Q_UNKNOWN='#39406a', Q_UNKNOWN_HATCH='repeating-linear-gradient(45deg,#434a78,#434a78 7px,#2f3457 7px,#2f3457 14px)';
 let TRUCK_BED={}, FACT_INTAKE={}, SCAN={}, BUF_X=250, BUF_Y0=0, BUF_PITCH=CARGA_H+14;
 let qCW=760, qCH=150;
@@ -430,7 +430,9 @@ async function sendLoadToBuffer(id,g){
 function feedMini(id,q){ const f=document.getElementById(id); if(!f) return; const s=document.createElement('span'); s.className='fmini'; s.style.background=QUAL[q].c; f.appendChild(s); while(f.children.length>11) f.removeChild(f.firstChild); }
 function baseAfter(q){ return q===0?78:q===1?80:83; }        // Safi sorted blend → stable ~80
 function baseBefore(q){ return q===0?42:q===1?70:96; }       // no sorting → whole bad load then good → big swings
-function pushSeries(arr,base){ for(let s=0;s<5;s++){ let v=base+(Math.random()*3-1.5); if(Math.random()<0.15) v+=(Math.random()<0.5?5:-5); arr.push(Math.max(2,Math.min(99,v))); } if(arr.length>Q_WINDOW) arr.splice(0,arr.length-Q_WINDOW); }
+function pushSeries(arr,base){ const last=arr.length?arr[arr.length-1]:base;   // ease from last value → new base for a smooth line
+  for(let s=0;s<6;s++){ const target=base+(Math.random()*2-1); let v=last+(target-last)*((s+1)/6)+(Math.random()*1.2-0.6); arr.push(Math.max(2,Math.min(99,v))); }
+  if(arr.length>Q_WINDOW) arr.splice(0,arr.length-Q_WINDOW); }
 function qReset(){ qA=[]; qB=[]; bIdx=0; drawQ(); }
 function drawQ(){ const c=document.getElementById('qcanvas'); if(!c) return; const dpr=window.devicePixelRatio||1;
   const w=qCW,h=qCH; if(c.width!==w*dpr){ c.width=w*dpr; c.height=h*dpr; } const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
@@ -507,12 +509,12 @@ async function startMode(m){
     const picks=selectIslandRR();
     for(const g of picks){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await sendLoadToBuffer(id,g); }
   } else {
-    genCargas(); prefillYardFull();
-    const picks=selectIslandRR(); buffer=[];
-    picks.forEach((g,n)=>{ const yc=cargas[g]; if(yc.el){ yc.el.remove(); yc.el=null; } yc.filled=0;
-      const bl={id:yc.id,q:yc.q,color:yc.color,n:yc.n,filled:yc.n,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id};
+    genCargas(); prefillYardFull(); buffer=[];
+    // longer, balanced buffer so consume runs long and the before-line sweeps low→high
+    const specs=[{q:2,n:7,o:'A'},{q:0,n:7,o:'B'},{q:1,n:6,o:'C'},{q:2,n:7,o:'A'},{q:0,n:5,o:'B'}];
+    specs.forEach((sp,n)=>{ seq++; const bl={id:seq,q:sp.q,color:QUAL[sp.q].c,n:sp.n,filled:sp.n,el:null,dots:[],origin:sp.o};
       makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y); refreshDots(bl); buffer.push(bl); });
-    beforeSeq=[]; buffer.forEach(b=>{ for(let i=0;i<b.n;i++) beforeSeq.push(b.q); }); beforeSeq.sort((a,b)=>a-b); bIdx=0;   // "before": all bad first, then good
+    beforeSeq=[]; buffer.forEach(b=>{ for(let i=0;i<b.n;i++) beforeSeq.push(b.q); }); beforeSeq.sort((a,b)=>a-b); bIdx=0;   // "before": all bad first, then good → sweeps up to high
     initInPlay=balesInBuffer(); setPhase('consume'); qReset();
     place(fork(), bufPos(0).x-24, bufPos(0).y-12); updateStats();
     await consumeBuffer(id);
