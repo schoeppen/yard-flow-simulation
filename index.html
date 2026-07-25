@@ -463,7 +463,7 @@ async function consumeBuffer(id){
       toProdB++; feedCount[bl.q]++; feedMini('feed', bl.q);
       pushSeries(qA, baseAfter(bl.q));
       wavePhase += 0.34 + Math.random()*0.55; bIdx++;   // irregular period → organic, inconsistent waves
-      const bbase = 70 + (20 + 9*Math.sin(wavePhase*0.41)) * Math.sin(wavePhase);   // amplitude also varies
+      const bbase = Q_TARGET + (16 + 8*Math.sin(wavePhase*0.41)) * Math.sin(wavePhase);   // centered on target: goes up as much as down
       pushSeries(qB, bbase);
       const bq = bbase<58 ? 0 : bbase<78 ? 1 : 2; feedMini('feedB', bq); drawQ();
       updateStats(); await wait(70);
