@@ -101,8 +101,8 @@
   .carga .pacas{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:2px;max-width:52px}
   .carga .pacas i{width:7px;height:7px;border-radius:2px;background:rgba(255,255,255,.35);transition:background .2s, transform .2s}
   .carga .pacas i.on{background:rgba(255,255,255,.95);transform:scale(1.05)}
-  .carga .chalf{position:absolute;left:0;top:0;bottom:0;width:50%;border-radius:9px 0 0 9px}   /* one bale sampled = half known */
-  .carga .cq{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:800;color:#fff}
+  .carga .qmini{position:absolute;top:3px;right:6px;font-size:10px;font-weight:800;color:#c9cde6}
+  .carga .pacas i.samp{box-shadow:0 0 0 1px rgba(255,255,255,.7);transform:scale(1.08)}
   .fly{position:absolute;border-radius:3px;box-shadow:0 1px 2px rgba(20,25,60,.3);border:1px solid rgba(0,0,0,.15);z-index:35;
     transition:left var(--mv) cubic-bezier(.45,.05,.25,1), top var(--mv) cubic-bezier(.45,.05,.25,1), opacity .25s;}
   #fork{position:absolute;z-index:40;pointer-events:none;transition:left var(--mv) linear, top var(--mv) linear;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
@@ -217,7 +217,7 @@ let speedMult=1, running=true, seq=0, totalBales=0, initInPlay=0, paused_resolve
 let toProdB=0, feedCount=[0,0,0];
 let qA=[], qB=[], beforeSeq=[], bIdx=0, wavePhase=0;
 let mode='store', runId=0;
-let era='after', mlabTimer=null, mlabSecs=0, backlog=0;
+let era='after', mlabTimer=null, mlabSecs=0, backlog=0, backlogPhase=0;
 const BASE_MOVE=560;
 let islaTop={}; ISLANDS.forEach((is,i)=>islaTop[is.id]=TOP+i*ISLA_PITCH);
 let cargas=[]; let buffer=[];
@@ -378,8 +378,11 @@ function renderCargaKnown(c){ const t=L(); c.el.style.background=c.color;
   let dots=''; for(let i=0;i<c.n;i++) dots+='<i></i>';
   const title = c.origin ? `${t.isla} ${c.origin} · C${c.id}` : `${t.load} ${c.id}`;
   c.el.innerHTML=`<div>${title}</div><div class="pacas">${dots}</div>`; c.dots=[...c.el.querySelectorAll('.pacas i')]; refreshDots(c); }
-function renderCargaUnknown(c){ c.el.style.background=Q_UNKNOWN_HATCH; c.el.innerHTML='<div style="font-size:17px;font-weight:800">?</div>'; c.dots=[]; }
-function renderCargaHalf(c){ c.el.style.background=Q_UNKNOWN_HATCH; c.el.innerHTML=`<div class="chalf" style="background:${c.color}"></div><span class="cq">?</span>`; c.dots=[]; }
+function renderCargaUnknown(c){ c.el.style.background=Q_UNKNOWN_HATCH;   // a load with bales, quality unknown
+  let dots=''; for(let i=0;i<c.n;i++) dots+='<i></i>';
+  c.el.innerHTML=`<span class="qmini">?</span><div class="pacas">${dots}</div>`;
+  c.dots=[...c.el.querySelectorAll('.pacas i')]; }
+function renderCargaHalf(c){ if(c.dots&&c.dots[0]){ c.dots[0].style.background=c.color; c.dots[0].classList.add('samp'); } }  // manual result: ONE bale of the load known
 function makeLoadEl(c){
   const el=document.createElement('div'); el.className='carga';
   el.style.width=CARGA_W+'px'; el.style.height=CARGA_H+'px'; el.style.setProperty('--mv',moveMs()+'ms');
@@ -440,8 +443,8 @@ async function storeBefore(id,g){
   await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){c.el.remove();c.el=null;return;}
   // dumped straight into the yard, unclassified
   place(c.el, p.x, p.y); const bc=boxCenterYard(g); parkFork(bc.x,bc.y,'R'); await wait(moveMs()*0.7); if(!alive(id)){c.el.remove();c.el=null;return;}
-  backlog += Math.floor(Math.random()*5)-1; if(backlog<14) backlog=14; updateBacklog();   // fluctuates up & down, trends up past 20
-  if(Math.random()<0.12) sampleOneLoad();   // ~every 2 h a manual sample returns → one bale of one load known (half ? / half colour)
+  backlogPhase += 0.16; backlog = Math.round(12 + 7*Math.sin(backlogPhase)); updateBacklog();   // gentle wave 5–19, never over 20
+  if(Math.random()<0.12) sampleOneLoad();   // ~every 2 h a manual sample returns → one bale of one load known
   updateStats(); await wait(28);   // fast → accumulation
 }
 // manual sampling returns a result for ONE bale → that load becomes half known / half unknown
@@ -449,7 +452,7 @@ function sampleOneLoad(){ const cands=cargas.filter(c=>c&&c.el&&c.state==='unkno
   const c=cands[Math.floor(Math.random()*cands.length)]; c.state='half'; renderCargaHalf(c); }
 function fmtHMS(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), x=Math.floor(s%60); const z=n=>String(n).padStart(2,'0'); return `${z(h)}:${z(m)}:${z(x)}`; }
 function updateBacklog(){ const b=document.getElementById('backlog'); if(!b) return;
-  const trucks='🚛'.repeat(Math.max(1,Math.min(9,Math.round(backlog/6))));
+  const trucks='🚛'.repeat(Math.max(1,Math.min(7,Math.round(backlog/3))));
   b.innerHTML=`<div class="bl-l">${L().waiting}</div><div class="bl-n">${backlog}</div><div class="bl-t">${trucks}</div>`;
   b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
 function startManualTimer(){ stopManualTimer(); mlabSecs=Math.floor(Math.random()*1200);
@@ -559,7 +562,7 @@ async function startMode(m){
   if(sc) sc.style.display=beforeStore?'none':'block';
   if(ml) ml.style.display=beforeStore?'block':'none';
   if(bk) bk.style.display=beforeStore?'block':'none';
-  if(beforeStore){ backlog=18; updateBacklog(); startManualTimer(); }
+  if(beforeStore){ backlogPhase=0; backlog=12; updateBacklog(); startManualTimer(); }
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y);
 
   if(m==='store'){
