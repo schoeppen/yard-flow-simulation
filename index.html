@@ -44,7 +44,12 @@
   .mlab .msub{font-size:10px;color:#c9cde6;margin-top:1px}
   .mlab .mbar{height:4px;background:#2a2c47;border-radius:3px;margin-top:6px;overflow:hidden}
   .mlab .mbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0a020,#e5484d)}
-  .backlog{position:absolute;background:#e5484d;color:#fff;font-weight:800;font-size:12px;padding:4px 10px;border-radius:10px;box-shadow:0 3px 10px rgba(229,72,77,.45);z-index:7;white-space:nowrap}
+  .backlog{position:absolute;background:#e5484d;color:#fff;font-weight:800;padding:7px 12px;border-radius:12px;box-shadow:0 4px 14px rgba(229,72,77,.5);z-index:7;text-align:center;min-width:150px;line-height:1.1}
+  .backlog .bl-l{font-size:10px;text-transform:uppercase;letter-spacing:.5px;opacity:.9}
+  .backlog .bl-n{font-size:22px;font-weight:900}
+  .backlog .bl-t{font-size:15px;letter-spacing:1px;margin-top:2px;height:18px;overflow:hidden}
+  .backlog.bump{animation:blbump .3s ease}
+  @keyframes blbump{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
   .controls label{font-size:12px;opacity:.9;display:flex;align-items:center;gap:7px;font-weight:600}
   input[type=range]{-webkit-appearance:none;appearance:none;width:92px;height:5px;border-radius:5px;background:rgba(255,255,255,.25);outline:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--teal);cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}
@@ -435,15 +440,18 @@ async function storeBefore(id,g){
   await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){c.el.remove();c.el=null;return;}
   // dumped straight into the yard, unclassified
   place(c.el, p.x, p.y); const bc=boxCenterYard(g); parkFork(bc.x,bc.y,'R'); await wait(moveMs()*0.7); if(!alive(id)){c.el.remove();c.el=null;return;}
-  backlog++; updateBacklog();
-  if(backlog%8===0) sampleOneLoad();   // ~every 2 h a manual sample returns → one bale of one load known (half ? / half colour)
+  backlog += Math.floor(Math.random()*5)-1; if(backlog<14) backlog=14; updateBacklog();   // fluctuates up & down, trends up past 20
+  if(Math.random()<0.12) sampleOneLoad();   // ~every 2 h a manual sample returns → one bale of one load known (half ? / half colour)
   updateStats(); await wait(28);   // fast → accumulation
 }
 // manual sampling returns a result for ONE bale → that load becomes half known / half unknown
 function sampleOneLoad(){ const cands=cargas.filter(c=>c&&c.el&&c.state==='unknown'); if(!cands.length) return;
   const c=cands[Math.floor(Math.random()*cands.length)]; c.state='half'; renderCargaHalf(c); }
 function fmtHMS(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), x=Math.floor(s%60); const z=n=>String(n).padStart(2,'0'); return `${z(h)}:${z(m)}:${z(x)}`; }
-function updateBacklog(){ const b=document.getElementById('backlog'); if(b) b.innerHTML=`🚛 ${L().waiting}: ${backlog}`; }
+function updateBacklog(){ const b=document.getElementById('backlog'); if(!b) return;
+  const trucks='🚛'.repeat(Math.max(1,Math.min(9,Math.round(backlog/6))));
+  b.innerHTML=`<div class="bl-l">${L().waiting}</div><div class="bl-n">${backlog}</div><div class="bl-t">${trucks}</div>`;
+  b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
 function startManualTimer(){ stopManualTimer(); mlabSecs=Math.floor(Math.random()*1200);
   const t=()=>document.getElementById('mtimer'), bar=()=>document.querySelector('#mlab .mbar i');
   mlabTimer=setInterval(()=>{ mlabSecs+=150; if(mlabSecs>=7200) mlabSecs=Math.floor(Math.random()*240);
@@ -551,7 +559,7 @@ async function startMode(m){
   if(sc) sc.style.display=beforeStore?'none':'block';
   if(ml) ml.style.display=beforeStore?'block':'none';
   if(bk) bk.style.display=beforeStore?'block':'none';
-  if(beforeStore){ backlog=0; updateBacklog(); startManualTimer(); }
+  if(beforeStore){ backlog=18; updateBacklog(); startManualTimer(); }
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y);
 
   if(m==='store'){
