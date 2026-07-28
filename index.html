@@ -96,6 +96,8 @@
   .carga .pacas{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:2px;max-width:52px}
   .carga .pacas i{width:7px;height:7px;border-radius:2px;background:rgba(255,255,255,.35);transition:background .2s, transform .2s}
   .carga .pacas i.on{background:rgba(255,255,255,.95);transform:scale(1.05)}
+  .carga .chalf{position:absolute;left:0;top:0;bottom:0;width:50%;border-radius:9px 0 0 9px}   /* one bale sampled = half known */
+  .carga .cq{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:800;color:#fff}
   .fly{position:absolute;border-radius:3px;box-shadow:0 1px 2px rgba(20,25,60,.3);border:1px solid rgba(0,0,0,.15);z-index:35;
     transition:left var(--mv) cubic-bezier(.45,.05,.25,1), top var(--mv) cubic-bezier(.45,.05,.25,1), opacity .25s;}
   #fork{position:absolute;z-index:40;pointer-events:none;transition:left var(--mv) linear, top var(--mv) linear;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
@@ -372,6 +374,7 @@ function renderCargaKnown(c){ const t=L(); c.el.style.background=c.color;
   const title = c.origin ? `${t.isla} ${c.origin} · C${c.id}` : `${t.load} ${c.id}`;
   c.el.innerHTML=`<div>${title}</div><div class="pacas">${dots}</div>`; c.dots=[...c.el.querySelectorAll('.pacas i')]; refreshDots(c); }
 function renderCargaUnknown(c){ c.el.style.background=Q_UNKNOWN_HATCH; c.el.innerHTML='<div style="font-size:17px;font-weight:800">?</div>'; c.dots=[]; }
+function renderCargaHalf(c){ c.el.style.background=Q_UNKNOWN_HATCH; c.el.innerHTML=`<div class="chalf" style="background:${c.color}"></div><span class="cq">?</span>`; c.dots=[]; }
 function makeLoadEl(c){
   const el=document.createElement('div'); el.className='carga';
   el.style.width=CARGA_W+'px'; el.style.height=CARGA_H+'px'; el.style.setProperty('--mv',moveMs()+'ms');
@@ -426,15 +429,19 @@ async function storeAfter(id,g){
 // BEFORE Safi AI: no scan. Only 1 bale is manually sampled (~2 h). Everything else piles up UNKNOWN → trucks + material back up.
 async function storeBefore(id,g){
   const c=cargas[g]; const p=posFor(g);
-  makeLoadEl(c); renderCargaUnknown(c); c.filled=0;   // stays "?" — quality unknown
+  makeLoadEl(c); renderCargaUnknown(c); c.filled=0; c.state='unknown';   // stays "?" — quality unknown
   placeInstant(c.el, TRUCK_BED.x-CARGA_W/2, TRUCK_BED.y-CARGA_H/2); c.el.style.opacity='0'; requestAnimationFrame(()=>c.el.style.opacity='1');
   driverManual();
   await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){c.el.remove();c.el=null;return;}
   // dumped straight into the yard, unclassified
   place(c.el, p.x, p.y); const bc=boxCenterYard(g); parkFork(bc.x,bc.y,'R'); await wait(moveMs()*0.7); if(!alive(id)){c.el.remove();c.el=null;return;}
   backlog++; updateBacklog();
+  if(backlog%8===0) sampleOneLoad();   // ~every 2 h a manual sample returns → one bale of one load known (half ? / half colour)
   updateStats(); await wait(28);   // fast → accumulation
 }
+// manual sampling returns a result for ONE bale → that load becomes half known / half unknown
+function sampleOneLoad(){ const cands=cargas.filter(c=>c&&c.el&&c.state==='unknown'); if(!cands.length) return;
+  const c=cands[Math.floor(Math.random()*cands.length)]; c.state='half'; renderCargaHalf(c); }
 function fmtHMS(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), x=Math.floor(s%60); const z=n=>String(n).padStart(2,'0'); return `${z(h)}:${z(m)}:${z(x)}`; }
 function updateBacklog(){ const b=document.getElementById('backlog'); if(b) b.innerHTML=`🚛 ${L().waiting}: ${backlog}`; }
 function startManualTimer(){ stopManualTimer(); mlabSecs=Math.floor(Math.random()*1200);
