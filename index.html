@@ -15,15 +15,15 @@
   body{font-family:'Figtree','Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);
     background:radial-gradient(1100px 560px at 18% -12%, #f8f9ff, transparent), radial-gradient(900px 460px at 102% -4%, #ecf7f6, transparent), var(--bg)}
   #app{display:flex;flex-direction:column;height:100vh}
-  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:7px 16px;color:#fff;
+  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:5px 14px;color:#fff;
     background:linear-gradient(118deg, var(--navy), var(--navy2));box-shadow:0 2px 14px rgba(10,12,30,.28);z-index:5}
   .brandwrap{display:flex;align-items:center;gap:10px}
   .hlogo{width:26px;height:26px;border-radius:8px;background:#fff;padding:3px;display:inline-flex;box-shadow:0 3px 10px rgba(0,0,0,.28)}
   .hlogo img{width:100%;height:100%;object-fit:contain}
   header h1{font-size:13.5px;margin:0;font-weight:800;line-height:1.1;letter-spacing:.2px}
   .hsub{font-size:10px;color:#a9aed0;font-weight:600;margin-top:1px}
-  .controls{display:flex;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap}
-  button{font:inherit;font-size:12.5px;border:0;border-radius:10px;padding:6px 12px;cursor:pointer;font-weight:700;background:var(--purple);color:#fff;
+  .controls{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
+  button{font:inherit;font-size:12px;border:0;border-radius:9px;padding:5px 9px;cursor:pointer;font-weight:700;background:var(--purple);color:#fff;
     transition:transform .08s ease, box-shadow .15s, background .15s;box-shadow:0 4px 12px rgba(99,71,255,.38)}
   button:hover{transform:translateY(-1px)}
   button:active{transform:translateY(0)}
@@ -31,7 +31,7 @@
   button.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
   button.ghost:hover{background:rgba(255,255,255,.2)}
   .modes{display:flex;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:3px;gap:2px}
-  .modes button{background:transparent;color:#c5c9e6;padding:7px 14px;box-shadow:none;font-weight:700}
+  .modes button{background:transparent;color:#c5c9e6;padding:5px 10px;box-shadow:none;font-weight:700}
   .modes button:hover{color:#fff;transform:none}
   .modes button.active{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.22)}
   #lang{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
@@ -46,7 +46,7 @@
   .mlab .mbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0a020,#e5484d)}
   .backlog{position:absolute;background:#e5484d;color:#fff;font-weight:800;font-size:12px;padding:4px 10px;border-radius:10px;box-shadow:0 3px 10px rgba(229,72,77,.45);z-index:7;white-space:nowrap}
   .controls label{font-size:12px;opacity:.9;display:flex;align-items:center;gap:7px;font-weight:600}
-  input[type=range]{-webkit-appearance:none;appearance:none;width:130px;height:5px;border-radius:5px;background:rgba(255,255,255,.25);outline:none}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:92px;height:5px;border-radius:5px;background:rgba(255,255,255,.25);outline:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--teal);cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}
   input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radius:50%;background:var(--teal);cursor:pointer}
   .stats{display:flex;gap:14px;padding:5px 16px;background:rgba(255,255,255,.72);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap;align-items:center}
@@ -166,7 +166,7 @@ const T={
     feedTitleB:'Feed to production · before Safi AI →', feedTitleA:'Feed to production · with Safi AI →',
     qTitle:'Processed quality over time', qSub:'Rolling quality per bale fed to production · target 80%',
     qTargetLbl:'target 80%', qLegA:'With Safi AI · moving average (last 5 bales)', qLegB:'Before Safi AI · moving average (last 5 bales)',
-    toBefore:'⚠ See “before”', toAfter:'✅ With Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~2 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting' },
+    toBefore:'⚠ Before', toAfter:'✅ Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~2 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting' },
   es:{ title:'Patio MP — Simulación de selección por calidad',
     store:'📦 Almacenar', buffer:'📥 Enviar al búfer', consume:'♻️ Consumir',
     pause:'⏸ Pausar', play:'▶ Reproducir', reset:'↺ Reiniciar', speed:'Velocidad', langBtn:'EN',
@@ -187,7 +187,7 @@ const T={
     feedTitleB:'Alimentación · antes de Safi AI →', feedTitleA:'Alimentación · con Safi AI →',
     qTitle:'Calidad procesada en el tiempo', qSub:'Calidad por paca hacia producción · objetivo 80%',
     qTargetLbl:'objetivo 80%', qLegA:'Con Safi AI · media móvil (últimas 5 pacas)', qLegB:'Antes de Safi AI · media móvil (últimas 5 pacas)',
-    toBefore:'⚠ Ver «antes»', toAfter:'✅ Con Safi AI', dManual:'MUESTREO MANUAL', manualQC:'QC manual · muestreo', perBale:'~2 h por paca', noQuality:'Sin calidad · sin clasificar', waiting:'Camiones esperando' }
+    toBefore:'⚠ Antes', toAfter:'✅ Safi AI', dManual:'MUESTREO MANUAL', manualQC:'QC manual · muestreo', perBale:'~2 h por paca', noQuality:'Sin calidad · sin clasificar', waiting:'Camiones esperando' }
 };
 let lang='en';
 function L(){ return T[lang]; }
