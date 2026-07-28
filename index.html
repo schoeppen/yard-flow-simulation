@@ -36,6 +36,15 @@
   .modes button.active{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.22)}
   #lang{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
   #lang:hover{background:rgba(255,255,255,.2)}
+  #era{background:var(--teal);color:#04302f;box-shadow:none}
+  #era.before{background:#f0a020;color:#3a2400}
+  .mlab{position:absolute;border:2px solid #f0a020;border-radius:14px;background:#1A1A2E;color:#fff;padding:8px 8px 10px;text-align:center;box-shadow:0 8px 22px rgba(240,160,32,.32);overflow:hidden;z-index:6}
+  .mlab .mtitle{font-size:11px;font-weight:800;color:#f5b74a;letter-spacing:.2px}
+  .mlab .mtimer{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:1px;margin-top:2px}
+  .mlab .msub{font-size:10px;color:#c9cde6;margin-top:1px}
+  .mlab .mbar{height:4px;background:#2a2c47;border-radius:3px;margin-top:6px;overflow:hidden}
+  .mlab .mbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0a020,#e5484d)}
+  .backlog{position:absolute;background:#e5484d;color:#fff;font-weight:800;font-size:12px;padding:4px 10px;border-radius:10px;box-shadow:0 3px 10px rgba(229,72,77,.45);z-index:7;white-space:nowrap}
   .controls label{font-size:12px;opacity:.9;display:flex;align-items:center;gap:7px;font-weight:600}
   input[type=range]{-webkit-appearance:none;appearance:none;width:130px;height:5px;border-radius:5px;background:rgba(255,255,255,.25);outline:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--teal);cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}
@@ -121,6 +130,7 @@
         <button id="mBuffer"></button>
         <button id="mConsume"></button>
       </div>
+      <button id="era" title="Toggle Safi AI"></button>
       <button id="lang" title="Language">ES</button>
       <button id="play"></button>
       <button class="ghost" id="reset"></button>
@@ -155,7 +165,8 @@ const T={
     subtitle:'MP bale flow · scan · sort · consume', scanZone:'Scan bale', dScan:'SCAN · Safi AI', dScanning:'Scanning bale…', dMaterial:'Material', qn:['Low','Intermediate','High'],
     feedTitleB:'Feed to production · before Safi AI →', feedTitleA:'Feed to production · with Safi AI →',
     qTitle:'Processed quality over time', qSub:'Rolling quality per bale fed to production · target 80%',
-    qTargetLbl:'target 80%', qLegA:'With Safi AI · moving average (last 5 bales)', qLegB:'Before Safi AI · moving average (last 5 bales)' },
+    qTargetLbl:'target 80%', qLegA:'With Safi AI · moving average (last 5 bales)', qLegB:'Before Safi AI · moving average (last 5 bales)',
+    toBefore:'⚠ See “before”', toAfter:'✅ With Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~2 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting' },
   es:{ title:'Patio MP — Simulación de selección por calidad',
     store:'📦 Almacenar', buffer:'📥 Enviar al búfer', consume:'♻️ Consumir',
     pause:'⏸ Pausar', play:'▶ Reproducir', reset:'↺ Reiniciar', speed:'Velocidad', langBtn:'EN',
@@ -175,7 +186,8 @@ const T={
     subtitle:'Flujo de pacas MP · escaneo · clasificación · consumo', scanZone:'Escanear paca', dScan:'ESCANEO · Safi AI', dScanning:'Escaneando paca…', dMaterial:'Material', qn:['Baja','Intermedia','Alta'],
     feedTitleB:'Alimentación · antes de Safi AI →', feedTitleA:'Alimentación · con Safi AI →',
     qTitle:'Calidad procesada en el tiempo', qSub:'Calidad por paca hacia producción · objetivo 80%',
-    qTargetLbl:'objetivo 80%', qLegA:'Con Safi AI · media móvil (últimas 5 pacas)', qLegB:'Antes de Safi AI · media móvil (últimas 5 pacas)' }
+    qTargetLbl:'objetivo 80%', qLegA:'Con Safi AI · media móvil (últimas 5 pacas)', qLegB:'Antes de Safi AI · media móvil (últimas 5 pacas)',
+    toBefore:'⚠ Ver «antes»', toAfter:'✅ Con Safi AI', dManual:'MUESTREO MANUAL', manualQC:'QC manual · muestreo', perBale:'~2 h por paca', noQuality:'Sin calidad · sin clasificar', waiting:'Camiones esperando' }
 };
 let lang='en';
 function L(){ return T[lang]; }
@@ -198,6 +210,7 @@ let speedMult=1, running=true, seq=0, totalBales=0, initInPlay=0, paused_resolve
 let toProdB=0, feedCount=[0,0,0];
 let qA=[], qB=[], beforeSeq=[], bIdx=0, wavePhase=0;
 let mode='store', runId=0;
+let era='after', mlabTimer=null, mlabSecs=0, backlog=0;
 const BASE_MOVE=560;
 let islaTop={}; ISLANDS.forEach((is,i)=>islaTop[is.id]=TOP+i*ISLA_PITCH);
 let cargas=[]; let buffer=[];
@@ -284,6 +297,14 @@ function buildScene(){
   scz.innerHTML=`<div class="sbrand"><span class="lg">${LOGO_SVG}</span>Safi <b>AI</b></div><div class="sico">📱</div><div class="slabel">${t.scanZone}</div><div class="sweep"></div>`;
   stage.appendChild(scz);
   SCAN={x:truckX+40, y:TOP+164};
+  // "before" era: manual sampling lab (2h timer) + truck/material backlog
+  const ml=document.createElement('div'); ml.className='mlab'; ml.id='mlab';
+  ml.style.cssText=`left:${truckX-14}px;top:${TOP+116}px;width:170px;display:none`;
+  ml.innerHTML=`<div class="mtitle">🔬 ${t.manualQC}</div><div class="mtimer" id="mtimer">00:00:00</div><div class="msub">${t.perBale}</div><div class="mbar"><i></i></div>`;
+  stage.appendChild(ml);
+  const bk=document.createElement('div'); bk.className='backlog'; bk.id='backlog';
+  bk.style.cssText=`left:${truckX-14}px;top:${TOP+232}px;display:none`;
+  stage.appendChild(bk);
   const flash=document.createElement('div'); flash.id='scanflash'; flash.style.cssText=`left:${SCAN.x-32}px;top:${SCAN.y-26}px;width:64px;height:52px`; stage.appendChild(flash);
 
   ISLANDS.forEach(is=>{
@@ -315,6 +336,7 @@ function baleChipHTML(color){ return `<div class="chipbox" style="background:${c
 function chipUnknownHTML(){ return `<div class="chipbox" style="background:${Q_UNKNOWN};width:54px;height:40px;font-size:18px">?</div>`; }
 function driverScan(){ const t=L(); setDriverBody(`<div class="task">${t.dScan}</div><div class="chip">${chipUnknownHTML()}<div class="big">📱 ${t.dScanning}</div></div>`); }
 function driverMaterial(c){ const t=L(); setDriverBody(`<div class="task">${t.dScan}</div><div class="chip">${chipHTML(c.color,c.n)}<div class="big">${t.dMaterial}: ${t.qn[c.q]}</div></div>`); }
+function driverManual(){ const t=L(); setDriverBody(`<div class="task" style="background:#c76a12">${t.dManual}</div><div class="chip">${chipUnknownHTML()}<div class="big">🔬 ${t.manualQC}</div></div><div class="row"><span class="lab">${t.noQuality}</span></div>`); }
 async function flashScan(){ const z=document.getElementById('scanzone'); if(z){ z.classList.remove('scanning'); void z.offsetWidth; z.classList.add('scanning'); } const f=document.getElementById('scanflash'); if(!f) return; f.style.opacity='1'; await wait(moveMs()*0.4); f.style.opacity='0'; }
 function setDriverBody(h){ const b=document.getElementById('driverBody'); if(b) b.innerHTML=h; }
 function driverIdle(){ const t=L(); setDriverBody(`<div class="task" style="background:#3a3c5c">${t.dIdle}</div>`); }
@@ -381,25 +403,45 @@ function selectIslandRR(){
   return picks;
 }
 
-// ========== STORING (full load: pick unknown → scan → store, same as Alen) ==========
-async function storeLoad(id,g){
+// ========== STORING ==========
+async function storeLoad(id,g){ return era==='before' ? storeBefore(id,g) : storeAfter(id,g); }
+
+// WITH Safi AI: pick unknown → scan → material revealed → stored (organised)
+async function storeAfter(id,g){
   const c=cargas[g]; const p=posFor(g);
-  // load arrives at the truck as a whole, UNKNOWN
   makeLoadEl(c); renderCargaUnknown(c); c.filled=0;
   placeInstant(c.el, TRUCK_BED.x-CARGA_W/2, TRUCK_BED.y-CARGA_H/2); c.el.style.opacity='0'; requestAnimationFrame(()=>c.el.style.opacity='1');
   driverScan();
   await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){c.el.remove();c.el=null;return;}
-  // carry the whole load to the Safi AI scan station
   place(c.el, SCAN.x-CARGA_W/2, SCAN.y-CARGA_H/2); await moveForkTo(SCAN.x,SCAN.y,'L'); if(!alive(id)){c.el.remove();c.el=null;return;}
   await wait(moveMs()*0.5); await flashScan();
-  renderCargaKnown(c); driverMaterial(c);                 // material revealed
+  renderCargaKnown(c); driverMaterial(c);
   await wait(moveMs()*0.6); if(!alive(id)){c.el.remove();c.el=null;return;}
-  // carry the whole load to its island slot, then bales settle in
   driverStore(g);
   place(c.el, p.x, p.y); const bc=boxCenterYard(g); parkFork(bc.x,bc.y,'R'); await wait(moveMs()); if(!alive(id)){c.el.remove();c.el=null;return;}
   await animateBalesIn(id,c); if(!alive(id))return;
   updateStats(); await wait(50);
 }
+
+// BEFORE Safi AI: no scan. Only 1 bale is manually sampled (~2 h). Everything else piles up UNKNOWN → trucks + material back up.
+async function storeBefore(id,g){
+  const c=cargas[g]; const p=posFor(g);
+  makeLoadEl(c); renderCargaUnknown(c); c.filled=0;   // stays "?" — quality unknown
+  placeInstant(c.el, TRUCK_BED.x-CARGA_W/2, TRUCK_BED.y-CARGA_H/2); c.el.style.opacity='0'; requestAnimationFrame(()=>c.el.style.opacity='1');
+  driverManual();
+  await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){c.el.remove();c.el=null;return;}
+  // dumped straight into the yard, unclassified
+  place(c.el, p.x, p.y); const bc=boxCenterYard(g); parkFork(bc.x,bc.y,'R'); await wait(moveMs()*0.7); if(!alive(id)){c.el.remove();c.el=null;return;}
+  backlog++; updateBacklog();
+  updateStats(); await wait(28);   // fast → accumulation
+}
+function fmtHMS(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), x=Math.floor(s%60); const z=n=>String(n).padStart(2,'0'); return `${z(h)}:${z(m)}:${z(x)}`; }
+function updateBacklog(){ const b=document.getElementById('backlog'); if(b) b.innerHTML=`🚛 ${L().waiting}: ${backlog}`; }
+function startManualTimer(){ stopManualTimer(); mlabSecs=Math.floor(Math.random()*1200);
+  const t=()=>document.getElementById('mtimer'), bar=()=>document.querySelector('#mlab .mbar i');
+  mlabTimer=setInterval(()=>{ mlabSecs+=150; if(mlabSecs>=7200) mlabSecs=Math.floor(Math.random()*240);
+    const tt=t(); if(tt) tt.textContent=fmtHMS(mlabSecs); const bb=bar(); if(bb) bb.style.width=Math.min(100,(mlabSecs/7200)*100)+'%'; }, 180); }
+function stopManualTimer(){ if(mlabTimer){ clearInterval(mlabTimer); mlabTimer=null; } }
 
 // ========== SEND TO BUFFER ==========
 async function sendLoadToBuffer(id,g){
@@ -495,6 +537,14 @@ async function startMode(m){
   const dp=document.getElementById('driver'); if(dp) dp.style.display='block';
   const qc=document.getElementById('qcard'); if(qc) qc.style.display=(m==='consume')?'block':'none';
   if(m==='consume') requestAnimationFrame(qReset); else qReset();
+  // stations: manual-sampling lab + backlog only during the "before" storing view
+  stopManualTimer();
+  const beforeStore=(era==='before' && m==='store');
+  const sc=document.getElementById('scanzone'), ml=document.getElementById('mlab'), bk=document.getElementById('backlog');
+  if(sc) sc.style.display=beforeStore?'none':'block';
+  if(ml) ml.style.display=beforeStore?'block':'none';
+  if(bk) bk.style.display=beforeStore?'block':'none';
+  if(beforeStore){ backlog=0; updateBacklog(); startManualTimer(); }
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y);
 
   if(m==='store'){
@@ -544,6 +594,7 @@ function applyStatic(){
   document.getElementById('mStore').textContent=t.store;
   document.getElementById('mBuffer').textContent=t.buffer;
   document.getElementById('mConsume').textContent=t.consume;
+  const eb=document.getElementById('era'); if(eb){ eb.textContent = era==='after'?t.toBefore:t.toAfter; eb.classList.toggle('before', era==='before'); }
   document.getElementById('lang').textContent=t.langBtn;
   document.getElementById('play').textContent=running?t.pause:t.play;
   document.getElementById('reset').textContent=t.reset;
@@ -554,6 +605,7 @@ function applyStatic(){
   document.getElementById('lblGrey').textContent=t.greynote;
 }
 function setLang(l){ lang=l; applyStatic(); buildScene(); startMode(mode); }
+function setEra(e){ era=e; applyStatic(); startMode(mode); }
 
 // ---------- fit / controls ----------
 function fitStage(){ const wrap=document.getElementById('stageWrap');
@@ -562,6 +614,7 @@ window.addEventListener('resize',fitStage);
 document.getElementById('mStore').onclick=()=>startMode('store');
 document.getElementById('mBuffer').onclick=()=>startMode('buffer');
 document.getElementById('mConsume').onclick=()=>startMode('consume');
+document.getElementById('era').onclick=()=>setEra(era==='after'?'before':'after');
 document.getElementById('lang').onclick=()=>setLang(lang==='en'?'es':'en');
 document.getElementById('play').onclick=e=>{ running=!running; e.target.textContent=running?L().pause:L().play;
   if(running&&paused_resolve){paused_resolve();paused_resolve=null;} };
