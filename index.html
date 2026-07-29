@@ -158,7 +158,7 @@
 <script>
 // ---------- i18n ----------
 const T={
-  en:{ title:'Yard MP — Quality Picking Simulation',
+  en:{ title:'Latam recycler simulation',
     store:'📦 Storing', buffer:'📥 Send to Buffer', consume:'♻️ Consume',
     pause:'⏸ Pause', play:'▶ Play', reset:'↺ Reset', speed:'Speed', langBtn:'ES',
     inplay:'In play:', bales:'bales', bufferLbl:'Buffer:', loads:'loads',
@@ -179,7 +179,7 @@ const T={
     qTitle:'Processed quality over time', qSub:'Rolling quality per bale fed to production · target 80%',
     qTargetLbl:'target 80%', qLegA:'With Safi AI · moving average (last 5 bales)', qLegB:'Before Safi AI · moving average (last 5 bales)',
     toBefore:'⚠ Before', toAfter:'✅ Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~1 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting', loadsStored:'Loads stored', noQuality2:'No quality known', unsorted:'Unsorted pile', unsortedT:'Dumped by arrival · no quality' },
-  es:{ title:'Patio MP — Simulación de selección por calidad',
+  es:{ title:'Latam recycler simulation',
     store:'📦 Almacenar', buffer:'📥 Enviar al búfer', consume:'♻️ Consumir',
     pause:'⏸ Pausar', play:'▶ Reproducir', reset:'↺ Reiniciar', speed:'Velocidad', langBtn:'EN',
     inplay:'En juego:', bales:'pacas', bufferLbl:'Búfer:', loads:'cargas',
@@ -534,18 +534,10 @@ async function feedBaleAt(id,i){
   fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
   toProdB++; feedCount[bl.q]++; feedMini('feed', bl.q);
   pushSeries(qA, baseAfter(bl.q));
-  if(era==='before'){ pushSeries(qB, baseBefore(bl.q)); feedMini('feedB', bl.q); }   // actual: greens high, reds low
-  else { wavePhase += 0.34+Math.random()*0.55; const bbase=Q_TARGET+(16+8*Math.sin(wavePhase*0.41))*Math.sin(wavePhase); pushSeries(qB, bbase); const bq=bbase<58?0:bbase<78?1:2; feedMini('feedB', bq); }
+  wavePhase += 0.34+Math.random()*0.55; const bbase=Q_TARGET+(16+8*Math.sin(wavePhase*0.41))*Math.sin(wavePhase); pushSeries(qB, bbase); const bq=bbase<58?0:bbase<78?1:2; feedMini('feedB', bq);
   drawQ(); updateStats(); await wait(70);
 }
-async function consumeBuffer(id){
-  if(era==='before'){   // no Safi: whole good batch first (very high) then whole bad batch (very low) → big swing
-    for(let i=0;i<buffer.length;i++){ const bl=buffer[i];
-      while(bl.filled>0){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await feedBaleAt(id,i); }
-      if(bl.el){ bl.el.style.opacity='0'; setTimeout(()=>bl.el&&bl.el.remove(),250); }
-    }
-    updateStats(); return;
-  }
+async function consumeBuffer(id){   // consume is identical for Before / With Safi AI
   while(buffer.some(b=>b.filled>0)){
     for(let i=0;i<buffer.length;i++){ if(buffer[i].filled<=0) continue; if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await feedBaleAt(id,i); }
     const gone=buffer.filter(b=>b.filled<=0);
@@ -585,7 +577,7 @@ async function startMode(m){
   if(ct) ct.style.display=beforeStore?'block':'none';
   if(beforeStore){ backlogPhase=0; backlog=12; loadsStored=0; updateBacklog(); updateCounters(); startManualTimer(); }
   // before era: the staging area becomes a disorganised "unsorted pile" (buffer + consume)
-  const messyBuf=(era==='before' && (m==='store'||m==='buffer'||m==='consume'));
+  const messyBuf=(era==='before' && (m==='store'||m==='buffer'));   // consume stays identical to Safi AI
   const bz=document.getElementById('bufzone'), bt2=document.getElementById('bufTitle'), bzl=document.getElementById('bufZoneLbl');
   if(bz) bz.classList.toggle('messy', messyBuf);
   if(bt2){ bt2.style.display=messyBuf?'none':'block'; if(!messyBuf) bt2.textContent=L().stagedMix; }
@@ -599,18 +591,14 @@ async function startMode(m){
     for(let g=0; g<TOTAL; g++){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await storeLoad(id,g); }
   } else if(m==='buffer'){
     genCargas(); prefillYardFull(); initInPlay=totalBales; setPhase('buffer'); updateStats();
-    const picks = era==='before' ? pickBufferBefore() : selectIslandRR();   // before: a skewed batch (3 red, 2 green)
+    const picks = selectIslandRR();   // always follow Island A left → right, in order
     for(const g of picks){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await sendLoadToBuffer(id,g); }
   } else {
     genCargas(); prefillYardFull(); buffer=[];
-    // before: no Safi → whole green batch then whole red batch (very high, then very low).  after: balanced mix (Safi stays stable ~80)
-    const specs = era==='before'
-      ? [{q:2,n:5,o:'A'},{q:2,n:5,o:'A'},{q:2,n:4,o:'A'},{q:0,n:5,o:'B'},{q:0,n:5,o:'B'}]
-      : [{q:2,n:5,o:'A'},{q:0,n:5,o:'B'},{q:1,n:5,o:'C'},{q:2,n:5,o:'A'},{q:0,n:5,o:'B'}];
+    // consume is identical for Before / With Safi AI — balanced mix, stable Safi line + comparison wave
+    const specs=[{q:2,n:5,o:'A'},{q:0,n:5,o:'B'},{q:1,n:5,o:'C'},{q:2,n:5,o:'A'},{q:0,n:5,o:'B'}];
     specs.forEach((sp,n)=>{ seq++; const bl={id:seq,q:sp.q,color:QUAL[sp.q].c,n:sp.n,filled:sp.n,el:null,dots:[],origin:sp.o};
-      makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y);
-      if(era==='before') bl.el.style.transform=`rotate(${(Math.random()*16-8).toFixed(1)}deg) translate(${(Math.random()*10-5).toFixed(0)}px,${(Math.random()*8-4).toFixed(0)}px)`;
-      refreshDots(bl); buffer.push(bl); });
+      makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y); refreshDots(bl); buffer.push(bl); });
     initInPlay=balesInBuffer(); setPhase('consume'); qReset();
     place(fork(), bufPos(0).x-24, bufPos(0).y-12); updateStats();
     await consumeBuffer(id);
