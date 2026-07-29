@@ -315,7 +315,7 @@ function buildScene(){
   ml.innerHTML=`<div class="mtitle">🔬 ${t.manualQC}</div><div class="mtimer" id="mtimer">00:00:00</div><div class="msub">${t.perBale}</div><div class="mbar"><i></i></div>`;
   stage.appendChild(ml);
   const bk=document.createElement('div'); bk.className='backlog'; bk.id='backlog';
-  bk.style.cssText=`left:${truckX+58}px;top:${TOP-34}px;display:none`;   // red trucks-waiting alert above the reception truck
+  bk.style.cssText=`left:${truckX+24}px;top:${TOP-30}px;display:none`;   // red trucks-waiting alert centered over the reception truck
   stage.appendChild(bk);
   const ct=document.createElement('div'); ct.className='counters'; ct.id='counters';
   ct.style.cssText=`left:${truckX-14}px;top:${TOP+230}px;display:none`;
