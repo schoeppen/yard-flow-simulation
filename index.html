@@ -178,7 +178,7 @@ const T={
     feedTitleB:'Feed to production · before Safi AI →', feedTitleA:'Feed to production · with Safi AI →',
     qTitle:'Processed quality over time', qSub:'Rolling quality per bale fed to production · target 80%',
     qTargetLbl:'target 80%', qLegA:'With Safi AI · moving average (last 5 bales)', qLegB:'Before Safi AI · moving average (last 5 bales)',
-    toBefore:'⚠ Before', toAfter:'✅ Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~1 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting', loadsStored:'Loads stored', noQuality2:'No quality known', unsorted:'Unsorted pile', unsortedT:'Dumped by arrival · no quality' },
+    toBefore:'⚠ Before', toAfter:'✅ Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~1 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting', loadsStored:'Loads stored', noQuality2:'Loads with no quality control', unsorted:'Unsorted pile', unsortedT:'Dumped by arrival · no quality' },
   es:{ title:'Latam recycler simulation',
     store:'📦 Almacenar', buffer:'📥 Enviar al búfer', consume:'♻️ Consumir',
     pause:'⏸ Pausar', play:'▶ Reproducir', reset:'↺ Reiniciar', speed:'Velocidad', langBtn:'EN',
@@ -199,7 +199,7 @@ const T={
     feedTitleB:'Alimentación · antes de Safi AI →', feedTitleA:'Alimentación · con Safi AI →',
     qTitle:'Calidad procesada en el tiempo', qSub:'Calidad por paca hacia producción · objetivo 80%',
     qTargetLbl:'objetivo 80%', qLegA:'Con Safi AI · media móvil (últimas 5 pacas)', qLegB:'Antes de Safi AI · media móvil (últimas 5 pacas)',
-    toBefore:'⚠ Antes', toAfter:'✅ Safi AI', dManual:'MUESTREO MANUAL', manualQC:'QC manual · muestreo', perBale:'~1 h por paca', noQuality:'Sin calidad · sin clasificar', waiting:'Camiones esperando', loadsStored:'Cargas almacenadas', noQuality2:'Sin calidad conocida', unsorted:'Montón sin clasificar', unsortedT:'Volcado por llegada · sin calidad' }
+    toBefore:'⚠ Antes', toAfter:'✅ Safi AI', dManual:'MUESTREO MANUAL', manualQC:'QC manual · muestreo', perBale:'~1 h por paca', noQuality:'Sin calidad · sin clasificar', waiting:'Camiones esperando', loadsStored:'Cargas almacenadas', noQuality2:'Cargas sin control de calidad', unsorted:'Montón sin clasificar', unsortedT:'Volcado por llegada · sin calidad' }
 };
 let lang='en';
 function L(){ return T[lang]; }
@@ -574,7 +574,7 @@ async function startMode(m){
   ['mStore','mBuffer','mConsume'].forEach(x=>document.getElementById(x).classList.remove('active'));
   document.getElementById(m==='store'?'mStore':m==='buffer'?'mBuffer':'mConsume').classList.add('active');
   await Promise.resolve(); clearAll();
-  const dp=document.getElementById('driver'); if(dp) dp.style.display='block';
+  const dp=document.getElementById('driver'); if(dp) dp.style.display=(era==='before' && (m==='store'||m==='buffer'))?'none':'block';   // no Safi driver in before storing/buffer
   const qc=document.getElementById('qcard'); if(qc) qc.style.display=(m==='consume')?'block':'none';
   if(m==='consume') requestAnimationFrame(qReset); else qReset();
   // stations: manual-sampling lab + backlog only during the "before" storing view
