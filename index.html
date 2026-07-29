@@ -90,6 +90,8 @@
   .fmini{width:18px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.3);flex:0 0 auto}
   .bufzone{position:absolute;border:1.5px dashed var(--teal);border-radius:var(--r);background:rgba(56,186,185,.07)}
   .bufzone .bt{position:absolute;top:-10px;left:14px;background:var(--bg);padding:0 8px;font-size:10px;font-weight:800;color:#1f8a89;text-transform:uppercase;letter-spacing:.6px}
+  .bufzone.messy{border:2px dashed #d1854a;border-radius:20px 8px 24px 10px;background:rgba(229,72,77,.05)}
+  .bufzone.messy .bt{color:#c76a12}
   .truckzone{position:absolute;border:1.5px dashed #cfd4e6;border-radius:var(--r);color:var(--muted);font-size:11px;padding:8px 10px;font-weight:700}
   .arrow{position:absolute;color:#8890b5;font-size:12px}
   .arrow .line{height:2px;background:#c3c8de;position:relative;margin-top:6px;width:150px}
@@ -177,7 +179,7 @@ const T={
     feedTitleB:'Feed to production · before Safi AI →', feedTitleA:'Feed to production · with Safi AI →',
     qTitle:'Processed quality over time', qSub:'Rolling quality per bale fed to production · target 80%',
     qTargetLbl:'target 80%', qLegA:'With Safi AI · moving average (last 5 bales)', qLegB:'Before Safi AI · moving average (last 5 bales)',
-    toBefore:'⚠ Before', toAfter:'✅ Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~2 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting', loadsStored:'Loads stored', noQuality2:'No quality known' },
+    toBefore:'⚠ Before', toAfter:'✅ Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~1 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting', loadsStored:'Loads stored', noQuality2:'No quality known', unsorted:'Unsorted pile', unsortedT:'Dumped by arrival · no quality' },
   es:{ title:'Patio MP — Simulación de selección por calidad',
     store:'📦 Almacenar', buffer:'📥 Enviar al búfer', consume:'♻️ Consumir',
     pause:'⏸ Pausar', play:'▶ Reproducir', reset:'↺ Reiniciar', speed:'Velocidad', langBtn:'EN',
@@ -198,7 +200,7 @@ const T={
     feedTitleB:'Alimentación · antes de Safi AI →', feedTitleA:'Alimentación · con Safi AI →',
     qTitle:'Calidad procesada en el tiempo', qSub:'Calidad por paca hacia producción · objetivo 80%',
     qTargetLbl:'objetivo 80%', qLegA:'Con Safi AI · media móvil (últimas 5 pacas)', qLegB:'Antes de Safi AI · media móvil (últimas 5 pacas)',
-    toBefore:'⚠ Antes', toAfter:'✅ Safi AI', dManual:'MUESTREO MANUAL', manualQC:'QC manual · muestreo', perBale:'~2 h por paca', noQuality:'Sin calidad · sin clasificar', waiting:'Camiones esperando', loadsStored:'Cargas almacenadas', noQuality2:'Sin calidad conocida' }
+    toBefore:'⚠ Antes', toAfter:'✅ Safi AI', dManual:'MUESTREO MANUAL', manualQC:'QC manual · muestreo', perBale:'~1 h por paca', noQuality:'Sin calidad · sin clasificar', waiting:'Camiones esperando', loadsStored:'Cargas almacenadas', noQuality2:'Sin calidad conocida', unsorted:'Montón sin clasificar', unsortedT:'Volcado por llegada · sin calidad' }
 };
 let lang='en';
 function L(){ return T[lang]; }
@@ -281,14 +283,14 @@ function buildScene(){
   stage.appendChild(qc);
 
   const bufH=BUF_MAX*BUF_PITCH+24; BUF_Y0=midY-bufH/2+22;
-  const bz=document.createElement('div'); bz.className='bufzone';
+  const bz=document.createElement('div'); bz.className='bufzone'; bz.id='bufzone';
   bz.style.cssText=`left:${BUF_X-14}px;top:${BUF_Y0-24}px;width:150px;height:${bufH}px`;
-  bz.innerHTML=`<div class="bt">${t.bufferZone}</div>`; stage.appendChild(bz);
-  const qt=document.createElement('div'); qt.className='qtitle';
+  bz.innerHTML=`<div class="bt" id="bufZoneLbl">${t.bufferZone}</div>`; stage.appendChild(bz);
+  const qt=document.createElement('div'); qt.className='qtitle'; qt.id='bufTitle';
   qt.style.cssText=`left:${BUF_X-14}px;top:${BUF_Y0-46}px;width:200px`; qt.textContent=t.stagedMix; stage.appendChild(qt);
   for(let i=0;i<BUF_MAX;i++){ const p=bufPos(i); const b=document.createElement('div'); b.className='bslot';
     b.style.cssText=`left:${p.x}px;top:${p.y}px;width:${CARGA_W}px;height:${CARGA_H}px`; stage.appendChild(b);
-    const nm=document.createElement('div'); nm.className='legend';
+    const nm=document.createElement('div'); nm.className='legend slotlbl';
     nm.style.cssText=`left:${p.x+CARGA_W+8}px;top:${p.y+CARGA_H/2-8}px;font-weight:700;color:#1f8a89`;
     nm.textContent=`${t.slot} ${i+1}`; stage.appendChild(nm); }
 
@@ -469,15 +471,20 @@ function updateBacklog(){ const b=document.getElementById('backlog'); if(!b) ret
   b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
 function startManualTimer(){ stopManualTimer(); mlabSecs=Math.floor(Math.random()*1200);
   const t=()=>document.getElementById('mtimer'), bar=()=>document.querySelector('#mlab .mbar i');
-  mlabTimer=setInterval(()=>{ mlabSecs+=150; if(mlabSecs>=7200) mlabSecs=Math.floor(Math.random()*240);
-    const tt=t(); if(tt) tt.textContent=fmtHMS(mlabSecs); const bb=bar(); if(bb) bb.style.width=Math.min(100,(mlabSecs/7200)*100)+'%'; }, 180); }
+  mlabTimer=setInterval(()=>{ mlabSecs+=90; if(mlabSecs>=3600) mlabSecs=Math.floor(Math.random()*180);
+    const tt=t(); if(tt) tt.textContent=fmtHMS(mlabSecs); const bb=bar(); if(bb) bb.style.width=Math.min(100,(mlabSecs/3600)*100)+'%'; }, 180); }
 function stopManualTimer(){ if(mlabTimer){ clearInterval(mlabTimer); mlabTimer=null; } }
 
 // ========== SEND TO BUFFER ==========
+// before Safi AI: with no quality data you can't build a good mix — you grab a skewed batch (3 red, 2 green)
+function pickBufferBefore(){ const picks=[]; const want=[0,0,0,2,2];   // 3 low(red) + 2 high(green)
+  for(const q of want){ for(let g=0; g<cargas.length; g++){ const c=cargas[g]; if(c&&c.el&&c.filled>0&&c.q===q&&!picks.includes(g)){ picks.push(g); break; } } }
+  return picks; }
 async function sendLoadToBuffer(id,g){
   const c=cargas[g]; const ctr=centerOf(g);
   const bl={id:c.id,q:c.q,color:c.color,n:c.n,filled:0,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id};
   makeLoadEl(bl); const bp=bufPos(buffer.length); placeInstant(bl.el,bp.x,bp.y); bl.el.style.opacity='.4'; refreshDots(bl);
+  if(era==='before') bl.el.style.transform=`rotate(${(Math.random()*18-9).toFixed(1)}deg) translate(${(Math.random()*12-6).toFixed(0)}px,${(Math.random()*10-5).toFixed(0)}px)`;   // messy pile
   buffer.push(bl); driverPick(g, buffer.length);
   for(let k=0;k<c.n;k++){
     if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
@@ -576,6 +583,14 @@ async function startMode(m){
   if(bk) bk.style.display=beforeStore?'block':'none';
   if(ct) ct.style.display=beforeStore?'block':'none';
   if(beforeStore){ backlogPhase=0; backlog=12; loadsStored=0; updateBacklog(); updateCounters(); startManualTimer(); }
+  // before era: the staging area becomes a disorganised "unsorted pile" (buffer + consume)
+  const messyBuf=(era==='before' && (m==='buffer'||m==='consume'));
+  const bz=document.getElementById('bufzone'), bt2=document.getElementById('bufTitle'), bzl=document.getElementById('bufZoneLbl');
+  if(bz) bz.classList.toggle('messy', messyBuf);
+  if(bt2) bt2.textContent = messyBuf? L().unsortedT : L().stagedMix;
+  if(bzl) bzl.textContent = messyBuf? L().unsorted : L().bufferZone;
+  document.querySelectorAll('.slotlbl').forEach(e=>e.style.display=messyBuf?'none':'block');
+  document.querySelectorAll('.bslot').forEach(e=>e.style.opacity=messyBuf?'0':'1');
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y);
 
   if(m==='store'){
@@ -583,7 +598,7 @@ async function startMode(m){
     for(let g=0; g<TOTAL; g++){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await storeLoad(id,g); }
   } else if(m==='buffer'){
     genCargas(); prefillYardFull(); initInPlay=totalBales; setPhase('buffer'); updateStats();
-    const picks=selectIslandRR();
+    const picks = era==='before' ? pickBufferBefore() : selectIslandRR();   // before: a skewed batch (3 red, 2 green)
     for(const g of picks){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await sendLoadToBuffer(id,g); }
   } else {
     genCargas(); prefillYardFull(); buffer=[];
