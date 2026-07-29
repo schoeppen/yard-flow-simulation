@@ -44,10 +44,7 @@
   .mlab .msub{font-size:10px;color:#c9cde6;margin-top:1px}
   .mlab .mbar{height:4px;background:#2a2c47;border-radius:3px;margin-top:6px;overflow:hidden}
   .mlab .mbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0a020,#e5484d)}
-  .backlog{position:absolute;background:#e5484d;color:#fff;font-weight:800;padding:7px 12px;border-radius:12px;box-shadow:0 4px 14px rgba(229,72,77,.5);z-index:7;text-align:center;min-width:150px;line-height:1.1}
-  .backlog .bl-l{font-size:10px;text-transform:uppercase;letter-spacing:.5px;opacity:.9}
-  .backlog .bl-n{font-size:22px;font-weight:900}
-  .backlog .bl-t{font-size:15px;letter-spacing:1px;margin-top:2px;height:18px;overflow:hidden}
+  .backlog{position:absolute;background:#e5484d;color:#fff;font-weight:900;font-size:14px;padding:3px 10px;border-radius:999px;box-shadow:0 3px 10px rgba(229,72,77,.55);z-index:9;white-space:nowrap;border:2px solid #fff}
   .backlog.bump{animation:blbump .3s ease}
   @keyframes blbump{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
   .counters{position:absolute;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh2);padding:8px 11px;z-index:7;min-width:170px}
@@ -316,7 +313,7 @@ function buildScene(){
   ml.innerHTML=`<div class="mtitle">🔬 ${t.manualQC}</div><div class="mtimer" id="mtimer">00:00:00</div><div class="msub">${t.perBale}</div><div class="mbar"><i></i></div>`;
   stage.appendChild(ml);
   const bk=document.createElement('div'); bk.className='backlog'; bk.id='backlog';
-  bk.style.cssText=`left:${truckX-14}px;top:${TOP-62}px;display:none`;   // on top of the reception truck
+  bk.style.cssText=`left:${truckX+80}px;top:${TOP-16}px;display:none`;   // red alert badge merged onto the reception truck
   stage.appendChild(bk);
   const ct=document.createElement('div'); ct.className='counters'; ct.id='counters';
   ct.style.cssText=`left:${truckX-14}px;top:${TOP+320}px;display:none`;
@@ -411,15 +408,10 @@ function genCargas(){ cargas=[]; totalBales=0; seq=0; const rnd=seededRandom(202
 function balesInYard(){ let s=0; cargas.forEach(c=>{ if(c.el) s+=c.filled; }); return s; }
 function balesInBuffer(){ return buffer.reduce((a,b)=>a+b.filled,0); }
 // alternate strictly across islands A→B→C→A→B, taking the oldest available load from each in turn
+// follow the FIRST island (A) left → right, taking loads in order
 function selectIslandRR(){
-  const base=ISLANDS.map((_,i)=>i*CAP), ptr=ISLANDS.map(()=>0), picks=[]; let isl=0, guard=0;
-  while(picks.length<BUF_MAX && guard<TOTAL*2){
-    guard++;
-    const g=base[isl]+ptr[isl];
-    if(ptr[isl]<CAP && cargas[g] && cargas[g].el && cargas[g].filled>0){ picks.push(g); ptr[isl]++; }
-    else { ptr[isl]++; }
-    isl=(isl+1)%ISLANDS.length;
-  }
+  const picks=[];
+  for(let g=0; g<CAP && picks.length<BUF_MAX; g++){ if(cargas[g] && cargas[g].el && cargas[g].filled>0) picks.push(g); }
   return picks;
 }
 
@@ -466,8 +458,7 @@ function updateCounters(){ const el=document.getElementById('counters'); if(!el)
   el.innerHTML=`<div class="ct-row"><span>${L().loadsStored}</span><b>${loadsStored}</b></div><div class="ct-row warn"><span>${L().noQuality2}</span><b>${noq}</b></div>`; }
 function fmtHMS(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), x=Math.floor(s%60); const z=n=>String(n).padStart(2,'0'); return `${z(h)}:${z(m)}:${z(x)}`; }
 function updateBacklog(){ const b=document.getElementById('backlog'); if(!b) return;
-  const trucks='🚛'.repeat(Math.max(1,Math.min(7,Math.round(backlog/3))));
-  b.innerHTML=`<div class="bl-l">${L().waiting}</div><div class="bl-n">${backlog}</div><div class="bl-t">${trucks}</div>`;
+  b.textContent=`⚠ ${backlog}`;
   b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
 function startManualTimer(){ stopManualTimer(); mlabSecs=Math.floor(Math.random()*1200);
   const t=()=>document.getElementById('mtimer'), bar=()=>document.querySelector('#mlab .mbar i');
@@ -530,26 +521,31 @@ function drawQ(){ const c=document.getElementById('qcanvas'); if(!c) return; con
   const x2=padL+28+ctx.measureText(t.qLegA).width+22;
   ctx.strokeStyle='#e5484d'; ctx.beginPath(); ctx.moveTo(x2,12); ctx.lineTo(x2+22,12); ctx.stroke();
   ctx.fillText(t.qLegB, x2+28, 13); ctx.textBaseline='alphabetic'; }
+async function feedBaleAt(id,i){
+  const bl=buffer[i];
+  driverConsume(i+1, bl.color);
+  const bbc=boxCenterBuf(i); await moveForkTo(bbc.x,bbc.y,'L'); if(!alive(id))return;
+  bl.filled--; refreshDots(bl);
+  const fly=makeFly(bl.color); place(fly,bufCenter(i).x,bufCenter(i).y);
+  const fc=factCenter(); place(fly,fc.x,fc.y); parkFork(FACT_INTAKE.x+CARGA_W/2,FACT_INTAKE.y+CARGA_H/2,'L');
+  await wait(moveMs()); if(!alive(id)){fly.remove();return;}
+  fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
+  toProdB++; feedCount[bl.q]++; feedMini('feed', bl.q);
+  pushSeries(qA, baseAfter(bl.q));
+  if(era==='before'){ pushSeries(qB, baseBefore(bl.q)); feedMini('feedB', bl.q); }   // actual: greens high, reds low
+  else { wavePhase += 0.34+Math.random()*0.55; const bbase=Q_TARGET+(16+8*Math.sin(wavePhase*0.41))*Math.sin(wavePhase); pushSeries(qB, bbase); const bq=bbase<58?0:bbase<78?1:2; feedMini('feedB', bq); }
+  drawQ(); updateStats(); await wait(70);
+}
 async function consumeBuffer(id){
-  while(buffer.some(b=>b.filled>0)){
-    for(let i=0;i<buffer.length;i++){
-      const bl=buffer[i]; if(bl.filled<=0) continue;
-      if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
-      driverConsume(i+1, bl.color);
-      const bbc=boxCenterBuf(i); await moveForkTo(bbc.x,bbc.y,'L'); if(!alive(id))return;
-      bl.filled--; refreshDots(bl);
-      const fly=makeFly(bl.color); place(fly,bufCenter(i).x,bufCenter(i).y);
-      const fc=factCenter(); place(fly,fc.x,fc.y); parkFork(FACT_INTAKE.x+CARGA_W/2,FACT_INTAKE.y+CARGA_H/2,'L');
-      await wait(moveMs()); if(!alive(id)){fly.remove();return;}
-      fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
-      toProdB++; feedCount[bl.q]++; feedMini('feed', bl.q);
-      pushSeries(qA, baseAfter(bl.q));
-      wavePhase += 0.34 + Math.random()*0.55; bIdx++;   // irregular period → organic, inconsistent waves
-      const bbase = Q_TARGET + (16 + 8*Math.sin(wavePhase*0.41)) * Math.sin(wavePhase);   // centered on target: goes up as much as down
-      pushSeries(qB, bbase);
-      const bq = bbase<58 ? 0 : bbase<78 ? 1 : 2; feedMini('feedB', bq); drawQ();
-      updateStats(); await wait(70);
+  if(era==='before'){   // no Safi: whole good batch first (very high) then whole bad batch (very low) → big swing
+    for(let i=0;i<buffer.length;i++){ const bl=buffer[i];
+      while(bl.filled>0){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await feedBaleAt(id,i); }
+      if(bl.el){ bl.el.style.opacity='0'; setTimeout(()=>bl.el&&bl.el.remove(),250); }
     }
+    updateStats(); return;
+  }
+  while(buffer.some(b=>b.filled>0)){
+    for(let i=0;i<buffer.length;i++){ if(buffer[i].filled<=0) continue; if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await feedBaleAt(id,i); }
     const gone=buffer.filter(b=>b.filled<=0);
     gone.forEach(b=>{ b.el.style.opacity='0'; setTimeout(()=>b.el&&b.el.remove(),250); });
     buffer=buffer.filter(b=>b.filled>0);
@@ -587,7 +583,7 @@ async function startMode(m){
   if(ct) ct.style.display=beforeStore?'block':'none';
   if(beforeStore){ backlogPhase=0; backlog=12; loadsStored=0; updateBacklog(); updateCounters(); startManualTimer(); }
   // before era: the staging area becomes a disorganised "unsorted pile" (buffer + consume)
-  const messyBuf=(era==='before' && (m==='buffer'||m==='consume'));
+  const messyBuf=(era==='before' && (m==='store'||m==='buffer'||m==='consume'));
   const bz=document.getElementById('bufzone'), bt2=document.getElementById('bufTitle'), bzl=document.getElementById('bufZoneLbl');
   if(bz) bz.classList.toggle('messy', messyBuf);
   if(bt2){ bt2.style.display=messyBuf?'none':'block'; if(!messyBuf) bt2.textContent=L().stagedMix; }
@@ -605,14 +601,14 @@ async function startMode(m){
     for(const g of picks){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await sendLoadToBuffer(id,g); }
   } else {
     genCargas(); prefillYardFull(); buffer=[];
-    // long, balanced buffer (Safi/after stays stable ~80)
-    const specs=[{q:2,n:5,o:'A'},{q:0,n:5,o:'B'},{q:1,n:5,o:'C'},{q:2,n:5,o:'A'},{q:0,n:5,o:'B'}];
+    // before: no Safi → whole green batch then whole red batch (very high, then very low).  after: balanced mix (Safi stays stable ~80)
+    const specs = era==='before'
+      ? [{q:2,n:5,o:'A'},{q:2,n:5,o:'A'},{q:2,n:4,o:'A'},{q:0,n:5,o:'B'},{q:0,n:5,o:'B'}]
+      : [{q:2,n:5,o:'A'},{q:0,n:5,o:'B'},{q:1,n:5,o:'C'},{q:2,n:5,o:'A'},{q:0,n:5,o:'B'}];
     specs.forEach((sp,n)=>{ seq++; const bl={id:seq,q:sp.q,color:QUAL[sp.q].c,n:sp.n,filled:sp.n,el:null,dots:[],origin:sp.o};
-      makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y); refreshDots(bl); buffer.push(bl); });
-    // "before Safi AI": deliberately INCONSISTENT input — blocks of bad / good / intermediate → line swings under and over the target
-    const totalB=buffer.reduce((a,b)=>a+b.n,0);
-    const pattern=[0,2,1,2,0,2,1]; const blk=6;   // 0=bad(low ~42) 2=good(high ~96) 1=intermediate(~70)
-    beforeSeq=[]; let pi=0; while(beforeSeq.length<totalB){ const q=pattern[pi%pattern.length]; for(let i=0;i<blk&&beforeSeq.length<totalB;i++) beforeSeq.push(q); pi++; } bIdx=0;
+      makeLoadEl(bl); const p=bufPos(n); placeInstant(bl.el,p.x,p.y);
+      if(era==='before') bl.el.style.transform=`rotate(${(Math.random()*16-8).toFixed(1)}deg) translate(${(Math.random()*10-5).toFixed(0)}px,${(Math.random()*8-4).toFixed(0)}px)`;
+      refreshDots(bl); buffer.push(bl); });
     initInPlay=balesInBuffer(); setPhase('consume'); qReset();
     place(fork(), bufPos(0).x-24, bufPos(0).y-12); updateStats();
     await consumeBuffer(id);
