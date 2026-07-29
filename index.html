@@ -50,6 +50,10 @@
   .backlog .bl-t{font-size:15px;letter-spacing:1px;margin-top:2px;height:18px;overflow:hidden}
   .backlog.bump{animation:blbump .3s ease}
   @keyframes blbump{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
+  .counters{position:absolute;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh2);padding:8px 11px;z-index:7;min-width:170px}
+  .counters .ct-row{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:11px;font-weight:700;color:var(--muted)}
+  .counters .ct-row b{font-size:16px;font-weight:900;color:var(--purple)}
+  .counters .ct-row.warn b{color:#e5484d}
   .controls label{font-size:12px;opacity:.9;display:flex;align-items:center;gap:7px;font-weight:600}
   input[type=range]{-webkit-appearance:none;appearance:none;width:92px;height:5px;border-radius:5px;background:rgba(255,255,255,.25);outline:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--teal);cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.4)}
@@ -98,8 +102,8 @@
   .carga{position:absolute;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;
     color:#fff;font-size:10px;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.25);box-shadow:0 1px 3px rgba(20,25,60,.18);
     transition:left var(--mv) cubic-bezier(.45,.05,.25,1), top var(--mv) cubic-bezier(.45,.05,.25,1), opacity .3s;}
-  .carga .pacas{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:2px;max-width:52px}
-  .carga .pacas i{width:7px;height:7px;border-radius:2px;background:rgba(255,255,255,.35);transition:background .2s, transform .2s}
+  .carga .pacas{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:2px;max-width:54px}
+  .carga .pacas i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.4);transition:background .2s, transform .2s}
   .carga .pacas i.on{background:rgba(255,255,255,.95);transform:scale(1.05)}
   .carga .qmini{position:absolute;top:3px;right:6px;font-size:10px;font-weight:800;color:#c9cde6}
   .carga .pacas i.samp{box-shadow:0 0 0 1px rgba(255,255,255,.7);transform:scale(1.08)}
@@ -173,7 +177,7 @@ const T={
     feedTitleB:'Feed to production · before Safi AI →', feedTitleA:'Feed to production · with Safi AI →',
     qTitle:'Processed quality over time', qSub:'Rolling quality per bale fed to production · target 80%',
     qTargetLbl:'target 80%', qLegA:'With Safi AI · moving average (last 5 bales)', qLegB:'Before Safi AI · moving average (last 5 bales)',
-    toBefore:'⚠ Before', toAfter:'✅ Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~2 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting' },
+    toBefore:'⚠ Before', toAfter:'✅ Safi AI', dManual:'MANUAL SAMPLING', manualQC:'Manual QC · sampling', perBale:'~2 h per bale', noQuality:'No quality yet · unclassified', waiting:'Trucks waiting', loadsStored:'Loads stored', noQuality2:'No quality known' },
   es:{ title:'Patio MP — Simulación de selección por calidad',
     store:'📦 Almacenar', buffer:'📥 Enviar al búfer', consume:'♻️ Consumir',
     pause:'⏸ Pausar', play:'▶ Reproducir', reset:'↺ Reiniciar', speed:'Velocidad', langBtn:'EN',
@@ -194,7 +198,7 @@ const T={
     feedTitleB:'Alimentación · antes de Safi AI →', feedTitleA:'Alimentación · con Safi AI →',
     qTitle:'Calidad procesada en el tiempo', qSub:'Calidad por paca hacia producción · objetivo 80%',
     qTargetLbl:'objetivo 80%', qLegA:'Con Safi AI · media móvil (últimas 5 pacas)', qLegB:'Antes de Safi AI · media móvil (últimas 5 pacas)',
-    toBefore:'⚠ Antes', toAfter:'✅ Safi AI', dManual:'MUESTREO MANUAL', manualQC:'QC manual · muestreo', perBale:'~2 h por paca', noQuality:'Sin calidad · sin clasificar', waiting:'Camiones esperando' }
+    toBefore:'⚠ Antes', toAfter:'✅ Safi AI', dManual:'MUESTREO MANUAL', manualQC:'QC manual · muestreo', perBale:'~2 h por paca', noQuality:'Sin calidad · sin clasificar', waiting:'Camiones esperando', loadsStored:'Cargas almacenadas', noQuality2:'Sin calidad conocida' }
 };
 let lang='en';
 function L(){ return T[lang]; }
@@ -217,7 +221,7 @@ let speedMult=1, running=true, seq=0, totalBales=0, initInPlay=0, paused_resolve
 let toProdB=0, feedCount=[0,0,0];
 let qA=[], qB=[], beforeSeq=[], bIdx=0, wavePhase=0;
 let mode='store', runId=0;
-let era='after', mlabTimer=null, mlabSecs=0, backlog=0, backlogPhase=0;
+let era='after', mlabTimer=null, mlabSecs=0, backlog=0, backlogPhase=0, loadsStored=0;
 const BASE_MOVE=560;
 let islaTop={}; ISLANDS.forEach((is,i)=>islaTop[is.id]=TOP+i*ISLA_PITCH);
 let cargas=[]; let buffer=[];
@@ -312,6 +316,9 @@ function buildScene(){
   const bk=document.createElement('div'); bk.className='backlog'; bk.id='backlog';
   bk.style.cssText=`left:${truckX-14}px;top:${TOP+232}px;display:none`;
   stage.appendChild(bk);
+  const ct=document.createElement('div'); ct.className='counters'; ct.id='counters';
+  ct.style.cssText=`left:${truckX-14}px;top:${TOP+320}px;display:none`;
+  stage.appendChild(ct);
   const flash=document.createElement('div'); flash.id='scanflash'; flash.style.cssText=`left:${SCAN.x-32}px;top:${SCAN.y-26}px;width:64px;height:52px`; stage.appendChild(flash);
 
   ISLANDS.forEach(is=>{
@@ -443,13 +450,18 @@ async function storeBefore(id,g){
   await moveForkTo(TRUCK_BED.x,TRUCK_BED.y,'R'); if(!alive(id)){c.el.remove();c.el=null;return;}
   // dumped straight into the yard, unclassified
   place(c.el, p.x, p.y); const bc=boxCenterYard(g); parkFork(bc.x,bc.y,'R'); await wait(moveMs()*0.7); if(!alive(id)){c.el.remove();c.el=null;return;}
+  loadsStored++;
   backlogPhase += 0.16; backlog = Math.round(12 + 7*Math.sin(backlogPhase)); updateBacklog();   // gentle wave 5–19, never over 20
   if(Math.random()<0.12) sampleOneLoad();   // ~every 2 h a manual sample returns → one bale of one load known
+  updateCounters();
   updateStats(); await wait(28);   // fast → accumulation
 }
 // manual sampling returns a result for ONE bale → that load becomes half known / half unknown
 function sampleOneLoad(){ const cands=cargas.filter(c=>c&&c.el&&c.state==='unknown'); if(!cands.length) return;
-  const c=cands[Math.floor(Math.random()*cands.length)]; c.state='half'; renderCargaHalf(c); }
+  const c=cands[Math.floor(Math.random()*cands.length)]; c.state='half'; renderCargaHalf(c); updateCounters(); }
+function updateCounters(){ const el=document.getElementById('counters'); if(!el) return;
+  const noq=cargas.filter(c=>c&&c.el&&c.state==='unknown').length;
+  el.innerHTML=`<div class="ct-row"><span>${L().loadsStored}</span><b>${loadsStored}</b></div><div class="ct-row warn"><span>${L().noQuality2}</span><b>${noq}</b></div>`; }
 function fmtHMS(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), x=Math.floor(s%60); const z=n=>String(n).padStart(2,'0'); return `${z(h)}:${z(m)}:${z(x)}`; }
 function updateBacklog(){ const b=document.getElementById('backlog'); if(!b) return;
   const trucks='🚛'.repeat(Math.max(1,Math.min(7,Math.round(backlog/3))));
@@ -558,11 +570,12 @@ async function startMode(m){
   // stations: manual-sampling lab + backlog only during the "before" storing view
   stopManualTimer();
   const beforeStore=(era==='before' && m==='store');
-  const sc=document.getElementById('scanzone'), ml=document.getElementById('mlab'), bk=document.getElementById('backlog');
+  const sc=document.getElementById('scanzone'), ml=document.getElementById('mlab'), bk=document.getElementById('backlog'), ct=document.getElementById('counters');
   if(sc) sc.style.display=beforeStore?'none':'block';
   if(ml) ml.style.display=beforeStore?'block':'none';
   if(bk) bk.style.display=beforeStore?'block':'none';
-  if(beforeStore){ backlogPhase=0; backlog=12; updateBacklog(); startManualTimer(); }
+  if(ct) ct.style.display=beforeStore?'block':'none';
+  if(beforeStore){ backlogPhase=0; backlog=12; loadsStored=0; updateBacklog(); updateCounters(); startManualTimer(); }
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y);
 
   if(m==='store'){
