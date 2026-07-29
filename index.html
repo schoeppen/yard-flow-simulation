@@ -44,9 +44,7 @@
   .mlab .msub{font-size:10px;color:#c9cde6;margin-top:1px}
   .mlab .mbar{height:4px;background:#2a2c47;border-radius:3px;margin-top:6px;overflow:hidden}
   .mlab .mbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0a020,#e5484d)}
-  .backlog{position:absolute;background:#e5484d;color:#fff;padding:4px 11px;border-radius:12px;box-shadow:0 4px 14px rgba(229,72,77,.6);z-index:30;white-space:nowrap;border:2px solid #fff;text-align:center;line-height:1}
-  .backlog .bn{font-size:17px;font-weight:900}
-  .backlog .bl{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;opacity:.95;margin-top:2px}
+  .backlog{position:absolute;background:#e5484d;color:#fff;padding:5px 6px;border-radius:9px;box-shadow:0 3px 10px rgba(229,72,77,.5);z-index:30;border:2px solid #fff;text-align:center;line-height:1;font-size:11px;font-weight:800;letter-spacing:.3px}
   .backlog.bump{animation:blbump .3s ease}
   @keyframes blbump{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
   .counters{position:absolute;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:11px 13px;z-index:7;min-width:182px}
@@ -315,7 +313,7 @@ function buildScene(){
   ml.innerHTML=`<div class="mtitle">🔬 ${t.manualQC}</div><div class="mtimer" id="mtimer">00:00:00</div><div class="msub">${t.perBale}</div><div class="mbar"><i></i></div>`;
   stage.appendChild(ml);
   const bk=document.createElement('div'); bk.className='backlog'; bk.id='backlog';
-  bk.style.cssText=`left:${truckX+24}px;top:${TOP-30}px;display:none`;   // red trucks-waiting alert centered over the reception truck
+  bk.style.cssText=`left:${truckX-14}px;top:${TOP-66}px;width:170px;display:none`;   // slim red banner right above the reception truck
   stage.appendChild(bk);
   const ct=document.createElement('div'); ct.className='counters'; ct.id='counters';
   ct.style.cssText=`left:${truckX-14}px;top:${TOP+230}px;display:none`;
@@ -467,7 +465,7 @@ function updateCounters(){ const el=document.getElementById('counters'); if(!el)
   el.innerHTML=`<div class="ct-h">Storing · no Safi AI</div><div class="ct-row"><span>${L().loadsStored}</span><b>${loadsStored}</b></div><div class="ct-row warn"><span>${L().noQuality2}</span><b>${noq}</b></div>`; }
 function fmtHMS(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), x=Math.floor(s%60); const z=n=>String(n).padStart(2,'0'); return `${z(h)}:${z(m)}:${z(x)}`; }
 function updateBacklog(){ const b=document.getElementById('backlog'); if(!b) return;
-  b.innerHTML=`<div class="bn">⚠ ${backlog}</div><div class="bl">trucks waiting</div>`;
+  b.textContent=`⚠ ${backlog} · TRUCKS WAITING`;
   b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
 function startManualTimer(){ stopManualTimer(); mlabSecs=Math.floor(Math.random()*1200);
   const t=()=>document.getElementById('mtimer'), bar=()=>document.querySelector('#mlab .mbar i');
