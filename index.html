@@ -482,7 +482,7 @@ function pickBufferBefore(){ const picks=[]; const want=[0,0,0,2,2];   // 3 low(
   return picks; }
 async function sendLoadToBuffer(id,g){
   const c=cargas[g]; const ctr=centerOf(g);
-  const unknown=(era==='before' && Math.random()<0.4);   // some material still has no quality result → stays ?
+  const unknown=(era==='before' && c.state==='unknown');   // unclassified yard load → stays ? in the buffer too
   const bl={id:c.id,q:c.q,color:c.color,n:c.n,filled:0,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id,unknown};
   makeLoadEl(bl); const bp=bufPos(buffer.length); placeInstant(bl.el,bp.x,bp.y); bl.el.style.opacity='.4'; refreshDots(bl);
   if(era==='before') bl.el.style.transform=`rotate(${(Math.random()*18-9).toFixed(1)}deg) translate(${(Math.random()*12-6).toFixed(0)}px,${(Math.random()*10-5).toFixed(0)}px)`;   // messy pile
@@ -491,7 +491,7 @@ async function sendLoadToBuffer(id,g){
   for(let k=0;k<c.n;k++){
     if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
     const yc=boxCenterYard(g); await moveForkTo(yc.x,yc.y,'L'); if(!alive(id))return;
-    c.filled--; refreshDots(c);
+    c.filled--; if(c.state!=='unknown') refreshDots(c);
     const fly=makeFly(flyC); place(fly,ctr.x,ctr.y);
     const i=buffer.indexOf(bl), tt=bufCenter(i);
     const bbc=boxCenterBuf(i); place(fly,tt.x,tt.y); parkFork(bbc.x,bbc.y,'L'); await wait(moveMs()); if(!alive(id)){fly.remove();return;}
@@ -562,7 +562,10 @@ function clearAll(){
   const f=document.getElementById('feed'); if(f) f.innerHTML='';
   const fb=document.getElementById('feedB'); if(fb) fb.innerHTML='';
 }
-function prefillYardFull(){ cargas.forEach((c,g)=>{ makeLoadEl(c); const p=posFor(g); placeInstant(c.el,p.x,p.y); c.filled=c.n; refreshDots(c); }); }
+function prefillYardFull(){ cargas.forEach((c,g)=>{ makeLoadEl(c); const p=posFor(g); placeInstant(c.el,p.x,p.y); c.filled=c.n;
+  if(era==='before' && mode==='buffer'){ renderCargaUnknown(c); c.state='unknown'; if(Math.random()<0.22){ c.state='half'; renderCargaHalf(c); } }   // like end of before-storing: mostly ?, some 1-bale sampled
+  else refreshDots(c);
+}); }
 
 async function startMode(m){
   runId++; const id=runId; mode=m;
