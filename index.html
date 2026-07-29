@@ -410,12 +410,19 @@ function genCargas(){ cargas=[]; totalBales=0; seq=0; const rnd=seededRandom(202
 function balesInYard(){ let s=0; cargas.forEach(c=>{ if(c.el) s+=c.filled; }); return s; }
 function balesInBuffer(){ return buffer.reduce((a,b)=>a+b.filled,0); }
 // alternate strictly across islands A→B→C→A→B, taking the oldest available load from each in turn
-// follow the FIRST island (A) left → right, taking loads in order
+// Safi AI: pick a deliberate mix across MULTIPLE islands (A → B → C round-robin)
 function selectIslandRR(){
-  const picks=[];
-  for(let g=0; g<CAP && picks.length<BUF_MAX; g++){ if(cargas[g] && cargas[g].el && cargas[g].filled>0) picks.push(g); }
+  const base=ISLANDS.map((_,i)=>i*CAP), ptr=ISLANDS.map(()=>0), picks=[]; let isl=0, guard=0;
+  while(picks.length<BUF_MAX && guard<TOTAL*2){ guard++;
+    const g=base[isl]+ptr[isl];
+    if(ptr[isl]<CAP && cargas[g] && cargas[g].el && cargas[g].filled>0){ picks.push(g); ptr[isl]++; }
+    else { ptr[isl]++; }
+    isl=(isl+1)%ISLANDS.length;
+  }
   return picks;
 }
+// before (no Safi): just grab from the first island, left → right, in order
+function pickBufferLeftRight(){ const picks=[]; for(let g=0; g<CAP && picks.length<BUF_MAX; g++){ if(cargas[g]&&cargas[g].el&&cargas[g].filled>0) picks.push(g); } return picks; }
 
 // ========== STORING ==========
 async function storeLoad(id,g){ return era==='before' ? storeBefore(id,g) : storeAfter(id,g); }
@@ -591,7 +598,7 @@ async function startMode(m){
     for(let g=0; g<TOTAL; g++){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await storeLoad(id,g); }
   } else if(m==='buffer'){
     genCargas(); prefillYardFull(); initInPlay=totalBales; setPhase('buffer'); updateStats();
-    const picks = selectIslandRR();   // always follow Island A left → right, in order
+    const picks = era==='before' ? pickBufferLeftRight() : selectIslandRR();   // Safi: multi-island mix · before: first island left→right
     for(const g of picks){ if(!alive(id))return; await ensureRunning(); if(!alive(id))return; await sendLoadToBuffer(id,g); }
   } else {
     genCargas(); prefillYardFull(); buffer=[];
