@@ -44,12 +44,15 @@
   .mlab .msub{font-size:10px;color:#c9cde6;margin-top:1px}
   .mlab .mbar{height:4px;background:#2a2c47;border-radius:3px;margin-top:6px;overflow:hidden}
   .mlab .mbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0a020,#e5484d)}
-  .backlog{position:absolute;background:#e5484d;color:#fff;font-weight:900;font-size:14px;padding:3px 10px;border-radius:999px;box-shadow:0 3px 10px rgba(229,72,77,.55);z-index:9;white-space:nowrap;border:2px solid #fff}
+  .backlog{position:absolute;background:#e5484d;color:#fff;padding:4px 11px;border-radius:12px;box-shadow:0 4px 14px rgba(229,72,77,.6);z-index:9;white-space:nowrap;border:2px solid #fff;text-align:center;line-height:1}
+  .backlog .bn{font-size:17px;font-weight:900}
+  .backlog .bl{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;opacity:.95;margin-top:2px}
   .backlog.bump{animation:blbump .3s ease}
   @keyframes blbump{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
-  .counters{position:absolute;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh2);padding:8px 11px;z-index:7;min-width:170px}
-  .counters .ct-row{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:11px;font-weight:700;color:var(--muted)}
-  .counters .ct-row b{font-size:16px;font-weight:900;color:var(--purple)}
+  .counters{position:absolute;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:11px 13px;z-index:7;min-width:182px}
+  .counters .ct-h{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+  .counters .ct-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;font-size:11.5px;font-weight:700;color:var(--ink);border-top:1px solid var(--line)}
+  .counters .ct-row b{font-size:18px;font-weight:900;color:var(--purple)}
   .counters .ct-row.warn b{color:#e5484d}
   .controls label{font-size:12px;opacity:.9;display:flex;align-items:center;gap:7px;font-weight:600}
   input[type=range]{-webkit-appearance:none;appearance:none;width:92px;height:5px;border-radius:5px;background:rgba(255,255,255,.25);outline:none}
@@ -141,7 +144,6 @@
         <button id="mConsume"></button>
       </div>
       <button id="era" title="Toggle Safi AI"></button>
-      <button id="lang" title="Language">ES</button>
       <button id="play"></button>
       <button class="ghost" id="reset"></button>
       <label><span id="lblSpeed">Speed</span> <input type="range" id="speed" min="0.5" max="16" step="0.5" value="1"></label>
@@ -313,10 +315,10 @@ function buildScene(){
   ml.innerHTML=`<div class="mtitle">🔬 ${t.manualQC}</div><div class="mtimer" id="mtimer">00:00:00</div><div class="msub">${t.perBale}</div><div class="mbar"><i></i></div>`;
   stage.appendChild(ml);
   const bk=document.createElement('div'); bk.className='backlog'; bk.id='backlog';
-  bk.style.cssText=`left:${truckX+80}px;top:${TOP-16}px;display:none`;   // red alert badge merged onto the reception truck
+  bk.style.cssText=`left:${truckX+64}px;top:${TOP-26}px;display:none`;   // red trucks-waiting alert on the reception truck
   stage.appendChild(bk);
   const ct=document.createElement('div'); ct.className='counters'; ct.id='counters';
-  ct.style.cssText=`left:${truckX-14}px;top:${TOP+320}px;display:none`;
+  ct.style.cssText=`left:${truckX-14}px;top:${TOP+230}px;display:none`;
   stage.appendChild(ct);
   const flash=document.createElement('div'); flash.id='scanflash'; flash.style.cssText=`left:${SCAN.x-32}px;top:${SCAN.y-26}px;width:64px;height:52px`; stage.appendChild(flash);
 
@@ -455,10 +457,10 @@ function sampleOneLoad(){ const cands=cargas.filter(c=>c&&c.el&&c.state==='unkno
   const c=cands[Math.floor(Math.random()*cands.length)]; c.state='half'; renderCargaHalf(c); updateCounters(); }
 function updateCounters(){ const el=document.getElementById('counters'); if(!el) return;
   const noq=cargas.filter(c=>c&&c.el&&c.state==='unknown').length;
-  el.innerHTML=`<div class="ct-row"><span>${L().loadsStored}</span><b>${loadsStored}</b></div><div class="ct-row warn"><span>${L().noQuality2}</span><b>${noq}</b></div>`; }
+  el.innerHTML=`<div class="ct-h">Storing · no Safi AI</div><div class="ct-row"><span>${L().loadsStored}</span><b>${loadsStored}</b></div><div class="ct-row warn"><span>${L().noQuality2}</span><b>${noq}</b></div>`; }
 function fmtHMS(s){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), x=Math.floor(s%60); const z=n=>String(n).padStart(2,'0'); return `${z(h)}:${z(m)}:${z(x)}`; }
 function updateBacklog(){ const b=document.getElementById('backlog'); if(!b) return;
-  b.textContent=`⚠ ${backlog}`;
+  b.innerHTML=`<div class="bn">⚠ ${backlog}</div><div class="bl">trucks waiting</div>`;
   b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
 function startManualTimer(){ stopManualTimer(); mlabSecs=Math.floor(Math.random()*1200);
   const t=()=>document.getElementById('mtimer'), bar=()=>document.querySelector('#mlab .mbar i');
@@ -640,7 +642,6 @@ function applyStatic(){
   document.getElementById('mBuffer').textContent=t.buffer;
   document.getElementById('mConsume').textContent=t.consume;
   const eb=document.getElementById('era'); if(eb){ eb.textContent = era==='after'?t.toBefore:t.toAfter; eb.classList.toggle('before', era==='before'); }
-  document.getElementById('lang').textContent=t.langBtn;
   document.getElementById('play').textContent=running?t.pause:t.play;
   document.getElementById('reset').textContent=t.reset;
   document.getElementById('lblSpeed').textContent=t.speed;
@@ -660,7 +661,6 @@ document.getElementById('mStore').onclick=()=>startMode('store');
 document.getElementById('mBuffer').onclick=()=>startMode('buffer');
 document.getElementById('mConsume').onclick=()=>startMode('consume');
 document.getElementById('era').onclick=()=>setEra(era==='after'?'before':'after');
-document.getElementById('lang').onclick=()=>setLang(lang==='en'?'es':'en');
 document.getElementById('play').onclick=e=>{ running=!running; e.target.textContent=running?L().pause:L().play;
   if(running&&paused_resolve){paused_resolve();paused_resolve=null;} };
 document.getElementById('reset').onclick=()=>startMode(mode);
