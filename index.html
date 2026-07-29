@@ -316,7 +316,7 @@ function buildScene(){
   ml.innerHTML=`<div class="mtitle">🔬 ${t.manualQC}</div><div class="mtimer" id="mtimer">00:00:00</div><div class="msub">${t.perBale}</div><div class="mbar"><i></i></div>`;
   stage.appendChild(ml);
   const bk=document.createElement('div'); bk.className='backlog'; bk.id='backlog';
-  bk.style.cssText=`left:${truckX-14}px;top:${TOP+232}px;display:none`;
+  bk.style.cssText=`left:${truckX-14}px;top:${TOP-62}px;display:none`;   // on top of the reception truck
   stage.appendChild(bk);
   const ct=document.createElement('div'); ct.className='counters'; ct.id='counters';
   ct.style.cssText=`left:${truckX-14}px;top:${TOP+320}px;display:none`;
@@ -482,20 +482,23 @@ function pickBufferBefore(){ const picks=[]; const want=[0,0,0,2,2];   // 3 low(
   return picks; }
 async function sendLoadToBuffer(id,g){
   const c=cargas[g]; const ctr=centerOf(g);
-  const bl={id:c.id,q:c.q,color:c.color,n:c.n,filled:0,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id};
+  const unknown=(era==='before' && Math.random()<0.4);   // some material still has no quality result → stays ?
+  const bl={id:c.id,q:c.q,color:c.color,n:c.n,filled:0,el:null,dots:[],origin:ISLANDS[Math.floor(g/CAP)].id,unknown};
   makeLoadEl(bl); const bp=bufPos(buffer.length); placeInstant(bl.el,bp.x,bp.y); bl.el.style.opacity='.4'; refreshDots(bl);
   if(era==='before') bl.el.style.transform=`rotate(${(Math.random()*18-9).toFixed(1)}deg) translate(${(Math.random()*12-6).toFixed(0)}px,${(Math.random()*10-5).toFixed(0)}px)`;   // messy pile
+  const flyC=unknown?Q_UNKNOWN:c.color;
   buffer.push(bl); driverPick(g, buffer.length);
   for(let k=0;k<c.n;k++){
     if(!alive(id))return; await ensureRunning(); if(!alive(id))return;
     const yc=boxCenterYard(g); await moveForkTo(yc.x,yc.y,'L'); if(!alive(id))return;
     c.filled--; refreshDots(c);
-    const fly=makeFly(c.color); place(fly,ctr.x,ctr.y);
+    const fly=makeFly(flyC); place(fly,ctr.x,ctr.y);
     const i=buffer.indexOf(bl), tt=bufCenter(i);
     const bbc=boxCenterBuf(i); place(fly,tt.x,tt.y); parkFork(bbc.x,bbc.y,'L'); await wait(moveMs()); if(!alive(id)){fly.remove();return;}
     fly.style.opacity='0'; setTimeout(()=>fly.remove(),200);
-    bl.filled++; bl.el.style.opacity='1'; refreshDots(bl); updateStats(); await wait(70);
+    bl.filled++; bl.el.style.opacity='1'; if(!unknown) refreshDots(bl); updateStats(); await wait(70);
   }
+  if(unknown) renderCargaUnknown(bl);   // arrived but no quality result → stays "?"
   c.el.style.opacity='0'; setTimeout(()=>{c.el&&c.el.remove(); c.el=null;},250);
 }
 
@@ -587,8 +590,8 @@ async function startMode(m){
   const messyBuf=(era==='before' && (m==='buffer'||m==='consume'));
   const bz=document.getElementById('bufzone'), bt2=document.getElementById('bufTitle'), bzl=document.getElementById('bufZoneLbl');
   if(bz) bz.classList.toggle('messy', messyBuf);
-  if(bt2) bt2.textContent = messyBuf? L().unsortedT : L().stagedMix;
-  if(bzl) bzl.textContent = messyBuf? L().unsorted : L().bufferZone;
+  if(bt2){ bt2.style.display=messyBuf?'none':'block'; if(!messyBuf) bt2.textContent=L().stagedMix; }
+  if(bzl){ bzl.style.display=messyBuf?'none':'block'; if(!messyBuf) bzl.textContent=L().bufferZone; }
   document.querySelectorAll('.slotlbl').forEach(e=>e.style.display=messyBuf?'none':'block');
   document.querySelectorAll('.bslot').forEach(e=>e.style.opacity=messyBuf?'0':'1');
   place(fork(), TRUCK_BED.x-30, TRUCK_BED.y);
